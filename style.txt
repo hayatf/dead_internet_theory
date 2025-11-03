@@ -1,0 +1,175 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body {
+  height: 100%;
+  font-family: "Times New Roman", Times, serif;
+  scroll-behavior: smooth;
+  overflow: hidden;
+}
+
+
+/* Scroll container */
+.container {
+  height: 100vh;
+  width: 100%;
+  overflow-y: scroll;
+  scroll-snap-type: y mandatory;
+  scroll-behavior: smooth;
+}
+
+h1 {
+  font-size: 40px;
+}
+
+h2 {
+  font-size: 30px;
+}
+
+p {
+  font-size: 25px;
+}
+
+/* Fullscreen sections */
+.section {
+  height: 100vh;
+  scroll-snap-align: start;
+  display: flex;
+  flex-direction: column; /* Stack items vertically */
+  justify-content: center;
+  align-items: center;
+  color: white;
+  font-size: 3rem;
+}
+
+#section1 { background: #151414; }
+#section2 { background: #151414; }
+#section3 { background: #151414; }
+#section4 { background: #151414; }
+#section5 { background: #151414; }
+#section6 { background: #151414; }
+#section7 { background: #151414; }
+#section8 { background: #151414; }
+
+
+/* Navigation dots */
+.nav-dots {
+  position: fixed;
+  top: 50%;
+  right: 30px;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  z-index: 10;
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.6);
+  transition: all 0.3s ease;
+}
+
+.dot.active,
+.dot:hover {
+  background: white;
+  transform: scale(1.4);
+}
+
+.image-row {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 2rem;              /* space between the two images */
+  flex-wrap: wrap;        /* lets them stack on smaller screens */
+  margin-top: 2rem;
+}
+
+.image-row figure {
+  text-align: center;
+  max-width: 400px;       /* control the image width */
+}
+
+.image-row img {
+  width: 100%;
+  height: auto;
+  border-radius: 10px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+}
+
+.image-row figcaption {
+  margin-top: 0.5rem;
+  font-size: 1rem;
+  color: #ccc;
+  font-style: italic;
+}
+
+.card-container {
+  display: flex;
+  justify-content: center;
+  align-items: stretch;
+  gap: 2rem;             /* space between cards */
+  margin-top: 2rem;
+  flex-wrap: wrap;       /* allows stacking on small screens */
+  max-width: 1000px;     /* optional, keeps cards centered */
+}
+
+.card {
+  background-color: #222;
+  color: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  padding: 2rem;
+  flex: 1;               /* makes both cards equal width */
+  min-width: 300px;      /* prevents cards from getting too small */
+  max-width: 500px;
+  min-height: 500px;      /* caps their size */
+  text-align: left;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+/* Optional hover animation */
+.card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
+}
+
+/* Make them stack on smaller screens */
+@media (max-width: 800px) {
+  .card-container {
+    flex-direction: column;
+    align-items: center;
+  }
+}
+
+ul li
+{
+font-size: 25px;
+
+}
+
+.checklist {
+  list-style: none;           /* remove default bullets */
+  padding: 0;
+  margin-top: 1rem;
+  text-align: left;
+}
+
+.checklist li {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+  font-size: 1rem;
+  color: #fff;
+}
+
+.checklist i {
+  color: #2ecc71;             /* green checkmark color */
+  font-size: 1.2rem;
+}
