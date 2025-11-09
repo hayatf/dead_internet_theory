@@ -3,6 +3,9 @@ const dots = document.querySelectorAll('.dot');
 const sections = document.querySelectorAll('.section');
 const container = document.querySelector('.container');
 
+// Track if chat animation has been triggered
+let chatAnimationTriggered = false;
+
 // Intersection Observer for detecting which section is visible
 const observer = new IntersectionObserver(
   (entries) => {
@@ -15,6 +18,15 @@ const observer = new IntersectionObserver(
         const activeDot = document.querySelector(`.dot[href="#${id}"]`);
         if (activeDot) {
           activeDot.classList.add('active');
+        }
+
+        // Trigger chat animation when section3 comes into view
+        if (id === 'section3' && !chatAnimationTriggered) {
+          chatAnimationTriggered = true;
+          const messages = document.querySelectorAll('.message-container');
+          messages.forEach((msg) => {
+            msg.classList.add('animate');
+          });
         }
       }
     });
@@ -39,5 +51,7 @@ dots.forEach((dot) => {
     targetSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
   });
 });
+
+
 
 
