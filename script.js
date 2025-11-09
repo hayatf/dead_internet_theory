@@ -52,82 +52,242 @@ dots.forEach((dot) => {
   });
 });
 
-// Wait for DOM content to be loaded before creating the pie chart
-document.addEventListener('DOMContentLoaded', () => {
-  try {
-    console.log('Creating pie chart...');
-    
-    // Dimensions and radius
-    const width = 600, height = 600, radius = Math.min(width, height) / 2;
-
-    // Color scheme
-    const color = d3.scaleOrdinal()
-      .domain(["Human", "Bot"])
-      .range(["#286cd8ff", "#ec1010ff"]);
-
-    // Create the SVG container
-    const chartDiv = document.getElementById('chart');
-    if (!chartDiv) {
-      console.error('#chart element not found');
-      return;
-    }
-
-    const svg = d3.select("#chart")
-      .append("svg")
-      .attr("width", width)
-      .attr("height", height)
-      .append("g")
-      .attr("transform", `translate(${width / 2}, ${height / 2})`);
-
-    const arc = d3.arc()
-      .innerRadius(0)
-      .outerRadius(radius - 20);
-
-    const pie = d3.pie()
-      .sort(null)
-      .value(d => d.count);
-
-    // Sample data
-    const data = [
-      { type: "Human", count: 96.76 },
-      { type: "Bot", count: 3.24 }
-    ];
-
-    console.log('Data for pie chart:', data);
-
-    // Create pie slices
-    const arcs = pie(data);
-
-    // Add paths
-    svg.selectAll("path")
-      .data(arcs)
-      .enter()
-      .append("path")
-      .attr("fill", d => color(d.data.type))
-      .attr("d", arc)
-      .attr("stroke", "white")
-      .attr("stroke-width", 1);
-
-    // Add labels
-    svg.selectAll("text")
-      .data(arcs)
-      .enter()
-      .append("text")
-      .attr("class", "label")
-      .attr("transform", d => `translate(${arc.centroid(d)})`)
-      .attr("dy", "0.35em")
-      .attr("text-anchor", "middle")
-      .text(d => `${d.data.type} (${((d.data.count / d3.sum(data, d=>d.count))*100).toFixed(1)}%)`);
-
-    console.log('Pie chart created successfully');
-  } catch (error) {
-    console.error('Error creating pie chart:', error);
-    const chartEl = document.getElementById('chart');
-    if (chartEl) {
-      chartEl.innerHTML = '<p style="color:#fff; text-align:center; padding:2rem;">Error creating pie chart. Check console for details.</p>';
-    }
+// Game Data - Bot vs Human Detection Game (Using actual database content)
+const gameData = [
+  {
+    id: 1,
+    title: "",
+    content: "In countries where coronaviruses cause disease, there is increasing support for putting an end to the use of experimental antiviral drugs. Some specialist groups fear that this will mean a shift in guidelines that could be catastrophic for those on the frontline. As a result, they are asking the public to step up and show their concerns in a public petition.",
+    isBot: true,
+    username: "@HealthNewsDaily",
+    avatar: "🩺",
+    handle: "healthnewsdaily"
+  },
+  {
+    id: 2,
+    title: "",
+    content: "Barcelona's Champions League last-16 second leg match with Napoli, scheduled for 18 March, will take place without spectators due to fears over the spread of the coronavirus, a club spokesman said on Tuesday. The match will take place at Camp Nou after a 1-1 draw in Naples.",
+    isBot: false,
+    username: "@SportsReporter",
+    avatar: "⚽",
+    handle: "sportsreporter"
+  },
+  {
+    id: 3,
+    title: "",
+    content: "Noonan also went on to argue that AI is more than a buzzword, explaining that 'programs are not neutral; they have effects.' Because of the importance of ethics in AI research, she argued that 'no one ever sat down and wrote a paper' on the topic. It is important to note that Noonan is fully aware that she is the embodiment of what she is not: a hacker.",
+    isBot: true,
+    username: "@TechEthics",
+    avatar: "🤖",
+    handle: "techethics"
+  },
+  {
+    id: 4,
+    title: "",
+    content: "Click over to Google, type in 'coronavirus', and press enter. The results you see will bear little resemblance to any other search. There are no ads, no product recommendations, and no links to websites that have figured out how to win the search engine optimisation game. Government, NGO and mainstream media sources dominate.",
+    isBot: false,
+    username: "@TechReporter",
+    avatar: "💻",
+    handle: "techreporter"
+  },
+  {
+    id: 5,
+    title: "",
+    content: "Although no opening date has been set, Cruise is expected to return to the helm of 'Mission: Impossible' within a year of the release of 'Tomorrowland,' according to NASA. Launching from Kennedy Space Center's pad 39A, Cruise is set to return to the global screen in July, when 'Mission: Impossible III' is scheduled to arrive in theaters.",
+    isBot: true,
+    username: "@MovieNews",
+    avatar: "🎬",
+    handle: "movienews"
+  },
+  {
+    id: 6,
+    title: "",
+    content: "SAN FRANCISCO — Several months ago, Google hired dozens of actors to sit at a table, stand in a hallway and walk down a street while talking into a video camera. Then the company's researchers, using a new kind of artificial intelligence software, swapped the faces of the actors. People who had been walking were suddenly at a table.",
+    isBot: false,
+    username: "@DigitalNews",
+    avatar: "🌐",
+    handle: "digitalnews"
   }
-});
+];
+
+// Game State
+let currentQuestion = 0;
+let score = 0;
+let gameStarted = false;
+
+// Game Elements
+const tweetCard = document.getElementById('tweetCard');
+const tweetTitle = document.getElementById('tweetTitle');
+const tweetText = document.getElementById('tweetText');
+const tweetUsername = document.getElementById('tweetUsername');
+const tweetAvatar = document.getElementById('tweetAvatar');
+const tweetTime = document.getElementById('tweetTime');
+const humanBtn = document.getElementById('humanBtn');
+const botBtn = document.getElementById('botBtn');
+const feedback = document.getElementById('feedback');
+const scoreEl = document.getElementById('score');
+const totalEl = document.getElementById('total');
+const currentEl = document.getElementById('current');
+const totalQuestionsEl = document.getElementById('totalQuestions');
+const finalResults = document.getElementById('finalResults');
+const finalScore = document.getElementById('finalScore');
+const finalTotal = document.getElementById('finalTotal');
+const finalMessage = document.getElementById('finalMessage');
+const restartBtn = document.getElementById('restartBtn');
+const commentsEl = document.getElementById('comments');
+const retweetsEl = document.getElementById('retweets');
+const likesEl = document.getElementById('likes');
+
+// Initialize game
+function initGame() {
+  currentQuestion = 0;
+  score = 0;
+  gameStarted = true;
+  finalResults.style.display = 'none';
+  updateScore();
+  loadQuestion();
+}
+
+// Update score display
+function updateScore() {
+  scoreEl.textContent = score;
+  totalEl.textContent = gameData.length;
+  currentEl.textContent = currentQuestion + 1;
+  totalQuestionsEl.textContent = gameData.length;
+}
+
+// Generate random social media stats
+function generateStats() {
+  const comments = Math.floor(Math.random() * 100) + 5;
+  const retweets = Math.floor(Math.random() * 200) + 10;
+  const likes = Math.floor(Math.random() * 1000) + 50;
+  
+  commentsEl.textContent = comments;
+  retweetsEl.textContent = retweets;
+  likesEl.textContent = likes;
+}
+
+// Load current question
+function loadQuestion() {
+  if (currentQuestion >= gameData.length) {
+    endGame();
+    return;
+  }
+
+  const question = gameData[currentQuestion];
+  
+  tweetTitle.textContent = question.title;
+  tweetText.textContent = question.content;
+  tweetUsername.textContent = question.username;
+  tweetAvatar.textContent = question.avatar;
+  
+  // Random time
+  const times = ['2m', '5m', '12m', '1h', '2h', '4h'];
+  tweetTime.textContent = times[Math.floor(Math.random() * times.length)];
+  
+  generateStats();
+  
+  // Reset buttons
+  humanBtn.disabled = false;
+  botBtn.disabled = false;
+  humanBtn.style.opacity = '1';
+  botBtn.style.opacity = '1';
+  
+  feedback.textContent = '';
+  feedback.className = 'feedback';
+  
+  updateScore();
+}
+
+// Handle answer
+function handleAnswer(isBot) {
+  const correct = gameData[currentQuestion].isBot === isBot;
+  
+  if (correct) {
+    score++;
+    feedback.textContent = '✅ Correct!';
+    feedback.className = 'feedback correct';
+  } else {
+    const actualType = gameData[currentQuestion].isBot ? 'AI Generated' : 'Human Written';
+    feedback.textContent = `❌ Wrong! This was ${actualType}`;
+    feedback.className = 'feedback incorrect';
+  }
+  
+  // Disable buttons
+  humanBtn.disabled = true;
+  botBtn.disabled = true;
+  humanBtn.style.opacity = '0.5';
+  botBtn.style.opacity = '0.5';
+  
+  updateScore();
+  
+  // Move to next question after delay
+  setTimeout(() => {
+    currentQuestion++;
+    loadQuestion();
+  }, 2000);
+}
+
+// End game
+function endGame() {
+  finalScore.textContent = score;
+  finalTotal.textContent = gameData.length;
+  
+  const percentage = (score / gameData.length) * 100;
+  let message = '';
+  
+  if (percentage >= 80) {
+    message = '🎉 Excellent! You have great digital literacy skills!';
+  } else if (percentage >= 60) {
+    message = '👍 Good job! You can spot most fake content.';
+  } else if (percentage >= 40) {
+    message = '🤔 Not bad, but there\'s room for improvement in detecting AI content.';
+  } else {
+    message = '📚 Keep practicing! AI detection is tricky but learnable.';
+  }
+  
+  finalMessage.textContent = message;
+  finalResults.style.display = 'block';
+  tweetCard.style.display = 'none';
+  document.querySelector('.game-buttons').style.display = 'none';
+  document.querySelector('.game-question').style.display = 'none';
+}
+
+// Event listeners
+if (humanBtn && botBtn) {
+  humanBtn.addEventListener('click', () => handleAnswer(false));
+  botBtn.addEventListener('click', () => handleAnswer(true));
+}
+
+if (restartBtn) {
+  restartBtn.addEventListener('click', () => {
+    tweetCard.style.display = 'block';
+    document.querySelector('.game-buttons').style.display = 'flex';
+    document.querySelector('.game-question').style.display = 'block';
+    initGame();
+  });
+}
+
+// Start game when section 6 comes into view
+const gameObserver = new IntersectionObserver(
+  (entries) => {
+    entries.forEach((entry) => {
+      if (entry.isIntersecting && entry.target.id === 'section6' && !gameStarted) {
+        initGame();
+      }
+    });
+  },
+  { 
+    root: container,
+    threshold: 0.5
+  }
+);
+
+const section6 = document.getElementById('section6');
+if (section6) {
+  gameObserver.observe(section6);
+}
+
 
 
 

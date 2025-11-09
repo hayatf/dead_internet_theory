@@ -69,7 +69,7 @@
     <section id="section3" class="section">
       
       <div class="chat-bubbles" id="chatBubbles">
-        <!-- Your message -->
+        <!-- title question -->
         <div class="message-container sent" data-delay="0">
           <div class="bubble bubble-sent">
             <p>Do you ever wonder who's behind the screen?</p>
@@ -152,15 +152,80 @@
     </section>
 
     <section id="section6" class="section">
-        <h1> Can you tell who's real? </h1>
-         <div class="image-row">
-         <figure>
-         <img src="figu.jpeg" alt="Bot Post">
-        </figure>
+        <div class="game-title-container">
+          <div class="game-title-icon">🤔</div>
+          <h1 class="game-title">Can you tell who's real?</h1>
+          <p class="game-subtitle">Test your ability to spot AI-generated content</p>
+        </div>
+        
+        <div class="game-container">
+          <div class="game-header">
+            <div class="score-display">
+              <i class="fas fa-chart-line"></i>
+              <span id="score">0</span> / <span id="total">6</span>
+            </div>
+            <div class="question-counter">
+              <span id="current">1</span> of <span id="totalQuestions">6</span>
+            </div>
+          </div>
 
-        <figure>
-         <img src="figu.jpeg" alt="Human Post">
-        </figure>
+          <div class="tweet-card" id="tweetCard">
+            <div class="tweet-header">
+              <div class="profile-section">
+                <div class="tweet-avatar" id="tweetAvatar">👤</div>
+                <div class="tweet-user-info">
+                  <div class="tweet-username" id="tweetUsername">@newsaccount</div>
+                  <div class="tweet-handle">• <span id="tweetTime">2h</span></div>
+                </div>
+              </div>
+              <div class="tweet-menu">⋯</div>
+            </div>
+            
+            <div class="tweet-content">
+              <h3 id="tweetTitle" class="tweet-headline"></h3>
+              <p id="tweetText" class="tweet-body"></p>
+            </div>
+            
+            <div class="tweet-footer">
+              <div class="tweet-stats">
+                <span><i class="far fa-comment"></i> <span id="comments">12</span></span>
+                <span><i class="fas fa-retweet"></i> <span id="retweets">34</span></span>
+                <span><i class="far fa-heart"></i> <span id="likes">156</span></span>
+                <span><i class="far fa-share"></i></span>
+              </div>
+            </div>
+          </div>
+
+          <div class="game-question">
+            <p>Is this content created by a human or AI?</p>
+          </div>
+
+          <div class="game-buttons">
+            <button class="game-btn human-btn" id="humanBtn">
+              <i class="fas fa-user"></i>
+              <span>Human</span>
+            </button>
+            <button class="game-btn bot-btn" id="botBtn">
+              <i class="fas fa-robot"></i>
+              <span>AI Bot</span>
+            </button>
+          </div>
+
+          <div class="feedback" id="feedback"></div>
+          
+          <div class="final-results" id="finalResults" style="display: none;">
+            <div class="results-content">
+              <h2>🎯 Game Complete!</h2>
+              <div class="final-score-big">
+                <span id="finalScore">0</span> / <span id="finalTotal">6</span>
+              </div>
+              <p class="final-message" id="finalMessage"></p>
+              <button class="restart-btn" id="restartBtn">
+                <i class="fas fa-redo"></i>
+                Play Again
+              </button>
+            </div>
+          </div>
         </div>
     </section>
 
