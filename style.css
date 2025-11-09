@@ -282,3 +282,18 @@ font-size: 25px;
 .message-container[data-delay="3"].animate { animation-delay: 2.1s; }
 .message-container[data-delay="4"].animate { animation-delay: 2.8s; }
 
+#chart {
+  width: 600px;
+  height: 600px;
+  margin: 2rem auto;
+}
+svg {
+  width: 100%;
+  height: 100%;
+}
+.label {
+  font-size: 14px;
+  text-anchor: middle;
+  fill: #fff; /* white labels for dark background */
+}
+
