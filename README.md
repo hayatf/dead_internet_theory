@@ -56,5 +56,3 @@ The final section summarizes three key lessons:
 
 ---
 
-## File Structure
-
