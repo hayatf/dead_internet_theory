@@ -1391,42 +1391,76 @@ document.addEventListener('DOMContentLoaded', () => {
   let svg, xScale, yScale, line, area, path, dots, peakCircle, peakLabel;
   
   // Load the CSV data using d3.text to handle custom format
+  // We'll show an in-page notice if the CSV is missing or can't be parsed.
+  let sampleData = createSampleData();
+
+  function showNotice() {
+    const notice = document.getElementById('searchTrendNotice');
+    if (notice) notice.style.display = 'block';
+    const instr = document.getElementById('fetchInstructions');
+    if (instr) instr.style.display = 'none';
+
+    // Wire up buttons (idempotent)
+    const useBtn = document.getElementById('useSampleBtn');
+    const howBtn = document.getElementById('howFetchBtn');
+    const closeBtn = document.getElementById('closeInstrBtn');
+    const useFromInstr = document.getElementById('useSampleFromInstrBtn');
+
+    if (useBtn) useBtn.addEventListener('click', () => { hideNotice(); renderChart(sampleData); setupControls(sampleData); updateStats(sampleData); });
+    if (useFromInstr) useFromInstr.addEventListener('click', () => { hideNotice(); renderChart(sampleData); setupControls(sampleData); updateStats(sampleData); });
+    if (howBtn) howBtn.addEventListener('click', () => { const instr = document.getElementById('fetchInstructions'); if (instr) { instr.style.display = 'block'; instr.setAttribute('aria-hidden', 'false'); } });
+    if (closeBtn) closeBtn.addEventListener('click', () => { const instr = document.getElementById('fetchInstructions'); if (instr) { instr.style.display = 'none'; instr.setAttribute('aria-hidden', 'true'); } });
+  }
+
+  function hideNotice() {
+    const notice = document.getElementById('searchTrendNotice');
+    if (notice) notice.style.display = 'none';
+    const instr = document.getElementById('fetchInstructions');
+    if (instr) { instr.style.display = 'none'; instr.setAttribute('aria-hidden', 'true'); }
+  }
+
   d3.text('search_traffic_google.csv').then(text => {
-    // Split into lines and skip the first line (category header)
-    const lines = text.split('\n').slice(2); // Skip first 2 lines
-    
-    // Parse the data
-    const allData = lines
-      .map(line => {
-        const [dateStr, valueStr] = line.split(',');
-        if (!dateStr || !valueStr) return null;
-        
-        const date = d3.timeParse('%Y-%m-%d')(dateStr.trim());
-        const value = +valueStr.trim();
-        
-        return { date, value };
-      })
-      .filter(d => d && d.date && !isNaN(d.value));
-    
-    if (allData.length === 0) {
-      chartContainer.innerHTML = '<p style="color: #ff6b6b; text-align: center;">No valid data found</p>';
-      return;
+    try {
+      // Split into lines and skip the first line (category header)
+      const lines = text.split('\n').slice(2); // Skip first 2 lines
+
+      // Parse the data
+      const allData = lines
+        .map(line => {
+          const [dateStr, valueStr] = line.split(',');
+          if (!dateStr || !valueStr) return null;
+
+          const date = d3.timeParse('%Y-%m-%d')(dateStr.trim());
+          const value = +valueStr.trim();
+
+          return { date, value };
+        })
+        .filter(d => d && d.date && !isNaN(d.value));
+
+      if (allData.length === 0) {
+        showNotice();
+        return;
+      }
+
+      currentData = allData;
+
+      // Update stats
+      updateStats(allData);
+
+      // Initial render
+      renderChart(allData);
+
+      // Setup interactive controls
+      setupControls(allData);
+    } catch (e) {
+      console.error('Error parsing search trend data:', e);
+      showNotice();
     }
-    
-    currentData = allData;
-    
-    // Update stats
-    updateStats(allData);
-    
-    // Initial render
-    renderChart(allData);
-    
-    // Setup interactive controls
-    setupControls(allData);
-    
+
   }).catch(error => {
-    console.error('Error loading search trend data:', error);
-    chartContainer.innerHTML = '<p style="color: #ff6b6b; text-align: center;">Error loading chart data</p>';
+    console.warn('Search trend CSV not available locally:', error);
+    // Show the in-page notice rather than silently using sample data
+    showNotice();
   });
   
   function updateStats(data) {
@@ -1722,6 +1756,23 @@ document.addEventListener('DOMContentLoaded', () => {
         .duration(800)
         .style('opacity', 1);
     }
+  }
+
+  // Generate a lightweight sample dataset (monthly points) for the chart
+  function createSampleData() {
+    const start = new Date('2020-01-01');
+    const end = new Date('2025-12-01');
+    const arr = [];
+    const cur = new Date(start);
+    while (cur <= end) {
+      // simple seasonal-ish sample values
+      const month = cur.getMonth();
+      const base = 20 + (month % 12) * 3;
+      const noise = Math.round((Math.sin(cur.getTime() / 1e10) + Math.random() * 0.6) * 10);
+      arr.push({ date: new Date(cur), value: Math.max(0, base + noise) });
+      cur.setMonth(cur.getMonth() + 1);
+    }
+    return arr;
   }
   
   function updateChart(data) {

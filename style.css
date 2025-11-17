@@ -1088,6 +1088,25 @@ svg {
   overflow: visible;
 }
 
+/* Notice shown when CSV is unavailable */
+.chart-notice {
+  background: rgba(255, 235, 230, 0.04);
+  border: 1px solid rgba(255, 107, 107, 0.08);
+  padding: 0.9rem 1rem;
+  border-radius: 10px;
+  margin: 0.6rem 0 1rem 0;
+  text-align: center;
+}
+.chart-notice p { margin: 0 0 0.6rem 0; color: #ffb3b3; }
+.chart-notice .chart-notice-actions { display: flex; gap: 0.6rem; justify-content: center; }
+.btn { background: #1DA1F2; color: #fff; border: none; padding: 0.45rem 0.8rem; border-radius: 8px; cursor: pointer; }
+.btn-secondary { background: transparent; border: 1px solid rgba(255,255,255,0.08); color: #fff; }
+.btn-link { background: transparent; border: none; color: #1DA1F2; }
+.fetch-instructions { background: rgba(20,20,20,0.6); border-radius: 8px; padding: 0.9rem; margin-bottom: 1rem; color: #eee; }
+.fetch-instructions h4 { margin-top: 0; }
+.fetch-instructions pre { background: rgba(0,0,0,0.25); padding: 0.5rem; border-radius: 4px; overflow:auto; }
+.fetch-instructions-actions { display:flex; gap:0.6rem; justify-content:flex-end; margin-top:0.6rem; }
+
 .trend-stats {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));

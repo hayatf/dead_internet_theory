@@ -92,6 +92,29 @@
           </button>
         </div>
 
+        <!-- Notice shown when local CSV can't be loaded -->
+        <div id="searchTrendNotice" class="chart-notice" style="display: none;" aria-live="polite">
+          <p>Local CSV for the search trend chart is not available on this machine.</p>
+          <div class="chart-notice-actions">
+            <button id="useSampleBtn" class="btn">Use sample data</button>
+            <button id="howFetchBtn" class="btn btn-secondary">How to fetch real data</button>
+          </div>
+        </div>
+
+        <div id="fetchInstructions" class="fetch-instructions" style="display: none;" aria-hidden="true">
+          <h4>How to fetch the real CSV (git LFS)</h4>
+          <p>Because the CSV is large it's stored with Git LFS. To fetch it locally:</p>
+          <ol>
+            <li>Install Git LFS: <code>git lfs install</code></li>
+            <li>Fetch the dataset: <code>git lfs pull --include "search_traffic_google.csv"</code></li>
+            <li>Or fetch all LFS files: <code>git lfs pull</code></li>
+          </ol>
+          <div class="fetch-instructions-actions">
+            <button id="closeInstrBtn" class="btn btn-link">Close</button>
+            <button id="useSampleFromInstrBtn" class="btn">Use sample data</button>
+          </div>
+        </div>
+
         <div id="searchTrendChart"></div>
         
         <div class="trend-stats">
