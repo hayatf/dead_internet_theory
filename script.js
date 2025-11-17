@@ -150,11 +150,26 @@ function initGame() {
 
 // Update score display
 function updateScore() {
-  scoreEl.textContent = score;
-  totalEl.textContent = gameData.length;
-  currentEl.textContent = currentQuestion + 1;
-  totalQuestionsEl.textContent = gameData.length;
+  console.log('updateScore called — score=', score, 'currentQuestion=', currentQuestion);
+
+  if (scoreEl) {
+    try { scoreEl.textContent = score; } catch (e) { console.warn('Failed to update scoreEl textContent', e); }
+  } else {
+    console.warn('scoreEl is null — cannot update visible score');
+  }
+
+  if (totalEl) totalEl.textContent = gameData.length;
+  if (currentEl) currentEl.textContent = currentQuestion + 1;
+  if (totalQuestionsEl) totalQuestionsEl.textContent = gameData.length;
+  // Ensure the accessible label on the score display is up to date
+  try {
+    const sd = document.querySelector('.score-display');
+    if (sd) sd.setAttribute('aria-label', `Score ${score} of ${gameData.length}`);
+  } catch (e) {
+    // no-op if DOM isn't ready
+  }
 }
+
 
 // Generate random social media stats
 function generateStats() {
@@ -201,10 +216,12 @@ function loadQuestion() {
 
 // Handle answer
 function handleAnswer(isBot) {
+  console.log('handleAnswer called — isBot=', isBot, 'currentQuestion=', currentQuestion, 'score(before)=', score);
   const correct = gameData[currentQuestion].isBot === isBot;
   
   if (correct) {
     score++;
+    console.log('Correct answer — score now', score);
     feedback.textContent = '✅ Correct!';
     feedback.className = 'feedback correct';
   } else {
@@ -511,6 +528,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Store the user prediction for the next section
     window.userBotPrediction = userPrediction;
+
+    // Notify any listeners (e.g., the reveal visualization) that a prediction was submitted
+    document.dispatchEvent(new CustomEvent('userPredictionSubmitted', { detail: { prediction: userPrediction } }));
   });
 
   // Initialize the tweets
@@ -617,6 +637,7 @@ document.addEventListener('DOMContentLoaded', () => {
       .attr("fill", d => d.isBot ? "#E91E8C" : "#1D9BF0")
       .attr("stroke", d => d.isBot ? "#FF1744" : "#0084D4")
       .attr("stroke-width", d => d.isBot ? 4 : 2)
+      .classed('bot-circle', d => d.isBot)
       .attr("opacity", 0)
       .transition()
       .duration(600)
@@ -658,6 +679,18 @@ document.addEventListener('DOMContentLoaded', () => {
         .duration(400)
         .attr("r", circleRadius);
     }, 2000);
+
+    // If the user already submitted a prediction, highlight that many bot-circles visually
+    const userPred = window.userBotPrediction || 0;
+    if (userPred > 0) {
+      // highlight the first `userPred` bot circles by adding a class and a glow
+      const botNodes = svg.selectAll('circle').filter(d => d.isBot).nodes();
+      for (let i = 0; i < botNodes.length && i < userPred; i++) {
+        d3.select(botNodes[i]).classed('user-highlight', true)
+          .attr('stroke-width', 6)
+          .attr('opacity', 1);
+      }
+    }
   }
 });
 

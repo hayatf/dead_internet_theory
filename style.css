@@ -18,21 +18,21 @@
   
   /* Typography Scale */
   --font-system: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  --font-size-xs: 1rem;
-  --font-size-sm: 1.2rem;
-  --font-size-md: 1.5rem;
-  --font-size-lg: 2rem;
-  --font-size-xl: 2.5rem;
-  --font-size-2xl: 3rem;
-  --font-size-3xl: 3.5rem;
+  --font-size-xs: 0.75rem;
+  --font-size-sm: 0.9rem;
+  --font-size-md: 1rem;
+  --font-size-lg: 1.2rem;
+  --font-size-xl: 1.4rem;
+  --font-size-2xl: 1.7rem;
+  --font-size-3xl: 2rem;
   
   /* Spacing Scale */
   --spacing-xs: 0.5rem;
   --spacing-sm: 1rem;
   --spacing-md: 1.5rem;
-  --spacing-lg: 2rem;
-  --spacing-xl: 3rem;
-  --spacing-2xl: 4rem;
+  --spacing-lg: 1rem;
+  --spacing-xl: 1.5rem;
+  --spacing-2xl: 2rem;
 }
 
 * {
@@ -79,7 +79,7 @@ p {
 
 /* Fullscreen sections - X (Twitter) Dark Theme */
 .section {
-  height: 100vh;
+  min-height: 100vh;
   scroll-snap-align: start;
   display: flex;
   flex-direction: column;
@@ -87,6 +87,8 @@ p {
   align-items: center;
   color: var(--text-primary);
   background: var(--primary-dark);
+  overflow: hidden;
+  padding: 1rem;
 }
 
 #section1 { background: var(--primary-dark); }
@@ -274,14 +276,14 @@ font-size: 25px;
 .chat-bubbles {
   display: flex;
   flex-direction: column;
-  gap: 2.5rem;
-  max-width: 1400px;
-  margin: 4rem auto;
-  padding: 4rem 3rem;
+  gap: 1.2rem;
+  max-width: 1200px;
+  margin: 1rem auto;
+  padding: 1.5rem 1rem;
   width: 100%;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   background: linear-gradient(135deg, rgba(29, 155, 240, 0.03) 0%, rgba(138, 43, 226, 0.03) 100%);
-  border-radius: 40px;
+  border-radius: 20px;
   backdrop-filter: blur(20px);
   border: 1px solid rgba(29, 155, 240, 0.2);
   box-shadow: 
@@ -304,7 +306,7 @@ font-size: 25px;
 
 .message-container {
   display: flex;
-  gap: 1.5rem;
+  gap: 0.8rem;
   opacity: 0;
   transform: translateY(40px) scale(0.95);
   animation: none;
@@ -333,19 +335,19 @@ font-size: 25px;
 }
 
 .profile-pic {
-  width: 70px;
-  height: 70px;
+  width: 45px;
+  height: 45px;
   border-radius: 50%;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 36px;
+  font-size: 24px;
   flex-shrink: 0;
   box-shadow: 
     0 8px 24px rgba(102, 126, 234, 0.4),
-    0 0 0 4px rgba(102, 126, 234, 0.1);
-  border: 3px solid rgba(255, 255, 255, 0.15);
+    0 0 0 3px rgba(102, 126, 234, 0.1);
+  border: 2px solid rgba(255, 255, 255, 0.15);
   position: relative;
   transition: all 0.3s ease;
 }
@@ -353,7 +355,7 @@ font-size: 25px;
 .profile-pic::after {
   content: '';
   position: absolute;
-  inset: -3px;
+  inset: -2px;
   border-radius: 50%;
   background: linear-gradient(135deg, rgba(102, 126, 234, 0.3), rgba(118, 75, 162, 0.3));
   z-index: -1;
@@ -365,7 +367,7 @@ font-size: 25px;
   transform: scale(1.1);
   box-shadow: 
     0 12px 32px rgba(102, 126, 234, 0.5),
-    0 0 0 6px rgba(102, 126, 234, 0.15);
+    0 0 0 4px rgba(102, 126, 234, 0.15);
 }
 
 .message-container:hover .profile-pic::after {
@@ -375,13 +377,13 @@ font-size: 25px;
 .message-content {
   display: flex;
   flex-direction: column;
-  gap: 0.8rem;
+  gap: 0.4rem;
   max-width: 75%;
 }
 
 .bubble {
-  border-radius: 32px;
-  padding: 2rem 2.5rem;
+  border-radius: 20px;
+  padding: 0.8rem 1.2rem;
   position: relative;
   word-wrap: break-word;
   box-shadow: 
@@ -392,7 +394,7 @@ font-size: 25px;
 }
 
 .bubble:hover {
-  transform: translateY(-3px);
+  transform: translateY(-2px);
   box-shadow: 
     0 12px 32px rgba(0, 0, 0, 0.4),
     0 0 0 1px rgba(255, 255, 255, 0.2) inset;
@@ -402,7 +404,7 @@ font-size: 25px;
 .bubble-sent {
   background: linear-gradient(135deg, #1D9BF0 0%, #0084D4 100%);
   color: white;
-  border-bottom-right-radius: 10px;
+  border-bottom-right-radius: 8px;
   max-width: 75%;
   box-shadow: 
     0 8px 28px rgba(29, 155, 240, 0.4),
@@ -427,7 +429,7 @@ font-size: 25px;
 .bubble-received {
   background: linear-gradient(135deg, #2C2C2E 0%, #1C1C1E 100%);
   color: white;
-  border-bottom-left-radius: 10px;
+  border-bottom-left-radius: 8px;
   box-shadow: 
     0 8px 24px rgba(0, 0, 0, 0.5),
     0 0 0 1px rgba(255, 255, 255, 0.1) inset;
@@ -446,9 +448,9 @@ font-size: 25px;
 }
 
 .bubble p {
-  font-size: 1.9rem;
+  font-size: 0.95rem;
   margin: 0;
-  line-height: 1.7;
+  line-height: 1.5;
   color: white;
   text-align: left;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
@@ -458,10 +460,10 @@ font-size: 25px;
 }
 
 .contact-name {
-  font-size: 1.2rem;
+  font-size: 0.85rem;
   color: rgba(29, 155, 240, 0.8);
   font-style: normal;
-  margin-left: 0.5rem;
+  margin-left: 0.3rem;
   font-weight: 600;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
@@ -496,27 +498,27 @@ font-size: 25px;
 }
 
 .game-title-icon {
-  font-size: 4rem;
-  margin-bottom: 1rem;
+  font-size: 2rem;
+  margin-bottom: 0.3rem;
   animation: bounce 2s infinite;
 }
 
 .game-title {
-  font-size: 3.5rem;
+  font-size: 1.3rem;
   font-weight: 800;
   background: linear-gradient(135deg, #1DA1F2, #00ba7c, #f91880);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
   color: transparent;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.3rem;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   letter-spacing: -0.02em;
   text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
 .game-subtitle {
-  font-size: 1.4rem;
+  font-size: 0.75rem;
   color: rgba(255, 255, 255, 0.7);
   font-weight: 400;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
@@ -529,17 +531,17 @@ font-size: 25px;
     transform: translateY(0);
   }
   40% {
-    transform: translateY(-10px);
+    transform: translateY(-5px);
   }
   60% {
-    transform: translateY(-5px);
+    transform: translateY(-2px);
   }
 }
 
 .game-container {
-  max-width: 1000px;
+  max-width: 900px;
   margin: 0 auto;
-  padding: 1rem 3rem;
+  padding: 0.5rem 0.5rem;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 }
 
@@ -547,15 +549,16 @@ font-size: 25px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 2rem;
-  padding: 0 1rem;
+  margin-bottom: 0.8rem;
+  padding: 0 0.5rem;
+  gap: 0.5rem;
 }
 
 .score-display {
   background: rgba(29, 161, 242, 0.1);
   border: 1px solid #1DA1F2;
-  border-radius: 25px;
-  padding: 1rem 1.5rem;
+  border-radius: 15px;
+  padding: 0.5rem 1rem;
   color: #1DA1F2;
   font-weight: 700;
   font-size: 1.4rem;
@@ -701,30 +704,31 @@ font-size: 25px;
 
 .game-buttons {
   display: flex;
-  gap: 1.5rem;
+  gap: 0.8rem;
   justify-content: center;
-  margin-bottom: 3rem;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
 }
 
 .game-btn {
   background: #192734;
-  border: 3px solid;
-  border-radius: 60px;
-  padding: 1.5rem 2.5rem;
-  font-size: 1.4rem;
+  border: 2px solid;
+  border-radius: 40px;
+  padding: 0.7rem 1.3rem;
+  font-size: 0.9rem;
   font-weight: 700;
   cursor: pointer;
   transition: all 0.3s ease;
   display: flex;
   align-items: center;
-  gap: 0.8rem;
-  min-width: 180px;
+  gap: 0.5rem;
+  min-width: 120px;
   justify-content: center;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 }
 
 .game-btn i {
-  font-size: 1.6rem;
+  font-size: 1rem;
 }
 
 .human-btn {
@@ -735,7 +739,7 @@ font-size: 25px;
 .human-btn:hover {
   background: #00ba7c;
   color: white;
-  transform: translateY(-3px);
+  transform: translateY(-2px);
   box-shadow: 0 6px 20px rgba(0, 186, 124, 0.3);
 }
 
@@ -747,7 +751,7 @@ font-size: 25px;
 .bot-btn:hover {
   background: #f91880;
   color: white;
-  transform: translateY(-3px);
+  transform: translateY(-2px);
   box-shadow: 0 6px 20px rgba(249, 24, 128, 0.3);
 }
 
@@ -781,20 +785,20 @@ font-size: 25px;
   text-align: center;
   background: #192734;
   border-radius: 25px;
-  padding: 4rem 3rem;
+  padding: 1.5rem 1rem;
   border: 1px solid #2f3336;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 }
 
 .results-content h2 {
   color: white;
-  margin-bottom: 1.5rem;
-  font-size: 2.5rem;
+  margin-bottom: 1rem;
+  font-size: 1.4rem;
   font-weight: 700;
 }
 
 .final-score-big {
-  font-size: 4rem;
+  font-size: 2rem;
   font-weight: 800;
   color: #1DA1F2;
   margin: 1.5rem 0;
@@ -811,9 +815,9 @@ font-size: 25px;
   background: #1DA1F2;
   color: white;
   border: none;
-  border-radius: 30px;
-  padding: 1.5rem 2.5rem;
-  font-size: 1.3rem;
+  border-radius: 25px;
+  padding: 0.8rem 1.5rem;
+  font-size: 0.95rem;
   font-weight: 700;
   cursor: pointer;
   transition: all 0.3s ease;
@@ -826,7 +830,7 @@ font-size: 25px;
 
 .restart-btn:hover {
   background: #0084b4;
-  transform: translateY(-3px);
+  transform: translateY(-2px);
   box-shadow: 0 6px 20px rgba(29, 161, 242, 0.3);
 }
 
@@ -991,11 +995,11 @@ svg {
 }
 
 .trend-title {
-  font-size: 3.5rem;
-  margin-bottom: 0.5rem;
+  font-size: 1.2rem;
+  margin-bottom: 0.3rem;
   color: #E7E9EA;
   text-shadow: 0 0 20px rgba(29, 155, 240, 0.4);
-  letter-spacing: 2px;
+  letter-spacing: 0.5px;
   font-weight: 700;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   opacity: 0;
@@ -1004,7 +1008,7 @@ svg {
 }
 
 .trend-subtitle {
-  font-size: 1.6rem;
+  font-size: 0.8rem;
   color: var(--text-secondary);
   margin-bottom: 1.5rem;
   font-style: normal;
@@ -1027,8 +1031,8 @@ svg {
 }
 
 .chart-btn {
-  padding: 1rem 2rem;
-  font-size: 1.1rem;
+  padding: 0.5rem 1rem;
+  font-size: 0.8rem;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   background: rgba(100, 149, 237, 0.15);
   border: 2px solid rgba(100, 149, 237, 0.3);
@@ -1047,7 +1051,7 @@ svg {
   background: rgba(100, 149, 237, 0.3);
   border-color: rgba(100, 149, 237, 0.6);
   color: white;
-  transform: translateY(-3px);
+  transform: translateY(-2px);
   box-shadow: 0 10px 20px rgba(100, 149, 237, 0.4);
 }
 
@@ -1059,7 +1063,7 @@ svg {
 }
 
 .chart-btn i {
-  font-size: 1.2rem;
+  font-size: 0.9rem;
 }
 
 #searchTrendChart {
@@ -1086,11 +1090,11 @@ svg {
 
 .trend-stats {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 2rem;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 0.8rem;
   margin-bottom: 0;
   width: 100%;
-  max-width: 1200px;
+  max-width: 1000px;
   opacity: 0;
   animation: fadeIn 1s ease-out 1.5s forwards;
 }
@@ -1107,8 +1111,8 @@ svg {
 .stat-card {
   background: rgba(29, 155, 240, 0.08);
   border: 2px solid rgba(29, 155, 240, 0.25);
-  border-radius: 20px;
-  padding: 2rem;
+  border-radius: 12px;
+  padding: 0.8rem;
   backdrop-filter: blur(10px);
   transition: all 0.3s ease;
   position: relative;
@@ -1144,17 +1148,17 @@ svg {
 }
 
 .stat-value {
-  font-size: 2.8rem;
+  font-size: 1.4rem;
   color: #fff;
   font-weight: 700;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.3rem;
   text-shadow: 0 0 15px rgba(100, 149, 237, 0.6);
   letter-spacing: 1px;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 }
 
 .stat-label {
-  font-size: 1.1rem;
+  font-size: 0.75rem;
   color: #d0d0e0;
   text-transform: uppercase;
   letter-spacing: 1.5px;
@@ -1320,7 +1324,7 @@ svg {
 
 .glitch {
   font-family: 'Courier New', monospace;
-  font-size: 4rem;
+  font-size: 1.8rem;
   font-weight: 700;
   text-transform: uppercase;
   position: relative;
@@ -1565,27 +1569,30 @@ svg {
 }
 
 .sentiment-container {
-  max-width: 1800px;
+  max-width: 95%;
   margin: 0 auto;
   text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
 }
 
 .sentiment-title {
-  font-size: 3.5rem;
-  margin-bottom: 0.8rem;
+  font-size: 1.2rem;
+  margin-bottom: 0.4rem;
   color: var(--text-bright);
-  letter-spacing: 1.5px;
+  letter-spacing: 0.5px;
   font-weight: 700;
   opacity: 0;
   transform: translateY(30px);
   animation: fadeInUp 0.8s ease-out forwards;
-  line-height: 1.3;
+  line-height: 1.2;
 }
 
 .sentiment-subtitle {
-  font-size: 1.6rem;
+  font-size: 0.85rem;
   color: var(--text-secondary);
-  margin-bottom: 2rem;
+  margin-bottom: 0.8rem;
   opacity: 0;
   transform: translateY(30px);
   animation: fadeInUp 0.8s ease-out 0.2s forwards;
@@ -1595,17 +1602,18 @@ svg {
 .viz-tabs {
   display: flex;
   justify-content: center;
-  gap: 1.5rem;
-  margin-bottom: 3rem;
+  gap: 0.8rem;
+  margin-bottom: 0.8rem;
   opacity: 0;
   animation: fadeInUp 0.8s ease-out 0.4s forwards;
+  flex-wrap: wrap;
 }
 
 .viz-tab {
-  padding: 1.2rem 3rem;
+  padding: 0.6rem 1rem;
   background: var(--secondary-dark);
   border: 2px solid transparent;
-  border-radius: 16px;
+  border-radius: 10px;
   color: var(--text-secondary);
   font-size: 1.3rem;
   font-weight: 700;
@@ -1865,14 +1873,14 @@ svg {
   z-index: 2;
   text-align: center;
   max-width: 1200px;
-  padding: 0 2rem;
+  padding: 0 1rem;
 }
 
 .big-question {
-  font-size: 6rem;
+  font-size: 1.8rem;
   font-weight: 800;
   color: #ffffff;
-  margin-bottom: 2rem;
+  margin-bottom: 1rem;
   text-shadow: 
     0 0 20px rgba(29, 155, 240, 0.5),
     0 0 40px rgba(29, 155, 240, 0.3),
@@ -2346,9 +2354,9 @@ svg {
 }
 
 .reveal-title {
-  font-size: 3rem;
+  font-size: 1.4rem;
   color: #fff;
-  margin-bottom: 2rem;
+  margin-bottom: 1rem;
   font-weight: 700;
   text-shadow: 0 2px 10px rgba(29, 155, 240, 0.5);
   animation: fadeInDown 0.8s ease;
@@ -2358,16 +2366,17 @@ svg {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 2rem;
-  margin-bottom: 2.5rem;
+  gap: 1rem;
+  margin-bottom: 1rem;
   animation: fadeInUp 1s ease 0.3s backwards;
+  flex-wrap: wrap;
 }
 
 .prediction-side, .actual-side {
   background: rgba(21, 32, 43, 0.8);
-  border-radius: 15px;
-  padding: 1.5rem 2rem;
-  min-width: 180px;
+  border-radius: 12px;
+  padding: 0.8rem 1rem;
+  min-width: 120px;
   border: 2px solid rgba(255, 255, 255, 0.1);
   backdrop-filter: blur(10px);
 }
@@ -2382,9 +2391,9 @@ svg {
 }
 
 .prediction-side h3, .actual-side h3 {
-  font-size: 1.2rem;
+  font-size: 0.85rem;
   color: #8899A6;
-  margin-bottom: 1rem;
+  margin-bottom: 0.5rem;
   font-weight: 600;
 }
 
@@ -2393,9 +2402,9 @@ svg {
 }
 
 .prediction-number, .actual-number {
-  font-size: 3.5rem;
+  font-size: 1.8rem;
   font-weight: 700;
-  margin: 0.5rem 0;
+  margin: 0.3rem 0;
 }
 
 .prediction-number {
@@ -2413,52 +2422,52 @@ svg {
 }
 
 .prediction-side p, .actual-side p {
-  font-size: 1.1rem;
+  font-size: 0.75rem;
   color: #8899A6;
 }
 
 .vs-divider {
-  font-size: 2rem;
+  font-size: 1.2rem;
   font-weight: 700;
   color: #fff;
   opacity: 0.5;
 }
 
 .reveal-visualization {
-  margin: 1.5rem 0;
-  min-height: 450px;
+  margin: 0.8rem 0;
+  min-height: 250px;
 }
 
 .reveal-stats {
-  margin-top: 2.5rem;
+  margin-top: 1rem;
   animation: fadeIn 1.2s ease 0.6s backwards;
 }
 
 .reveal-stats h3 {
-  font-size: 1.8rem;
+  font-size: 1.1rem;
   color: #fff;
-  margin-bottom: 1.5rem;
+  margin-bottom: 0.8rem;
   font-weight: 600;
 }
 
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 1.5rem;
-  margin-bottom: 1.5rem;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 0.8rem;
+  margin-bottom: 0.8rem;
 }
 
 .stat-card {
   background: rgba(21, 32, 43, 0.6);
-  border-radius: 12px;
-  padding: 1.5rem;
+  border-radius: 10px;
+  padding: 0.8rem;
   border: 2px solid rgba(255, 255, 255, 0.1);
   backdrop-filter: blur(10px);
   transition: all 0.3s ease;
 }
 
 .stat-card:hover {
-  transform: translateY(-5px);
+  transform: translateY(-3px);
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
 }
 
@@ -2473,10 +2482,10 @@ svg {
 }
 
 .stat-value {
-  font-size: 2.5rem;
+  font-size: 1.4rem;
   font-weight: 700;
   color: #fff;
-  margin-bottom: 0.75rem;
+  margin-bottom: 0.4rem;
 }
 
 .bot-stat .stat-value {
@@ -2488,13 +2497,13 @@ svg {
 }
 
 .stat-label {
-  font-size: 1.1rem;
+  font-size: 0.8rem;
   color: #8899A6;
   line-height: 1.4;
 }
 
 .reveal-detail {
-  font-size: 1.2rem;
+  font-size: 0.9rem;
   color: #8899A6;
   line-height: 1.6;
   max-width: 900px;
@@ -2531,11 +2540,11 @@ svg {
    ======================================== */
 .fewer-bots-section {
   background: linear-gradient(180deg, #0a1929 0%, #001529 50%, #000814 100%);
-  min-height: 70vh;
+  min-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 5rem 2rem;
+  padding: 2rem 1rem;
   position: relative;
   overflow: hidden;
 }
@@ -2546,8 +2555,8 @@ svg {
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  width: 600px;
-  height: 600px;
+  width: 400px;
+  height: 400px;
   background: radial-gradient(circle, rgba(29, 155, 240, 0.1) 0%, transparent 70%);
   animation: pulse 4s ease-in-out infinite;
 }
@@ -2561,10 +2570,10 @@ svg {
 }
 
 .fewer-bots-icon {
-  font-size: 5rem;
-  margin-bottom: 2rem;
-  width: 100px;
-  height: 100px;
+  font-size: 2.5rem;
+  margin-bottom: 1rem;
+  width: 70px;
+  height: 70px;
   background: linear-gradient(135deg, #10B981 0%, #059669 100%);
   border-radius: 50%;
   display: flex;
@@ -2584,9 +2593,9 @@ svg {
 }
 
 .fewer-bots-title {
-  font-size: 3.5rem;
+  font-size: 1.4rem;
   color: #fff;
-  margin-bottom: 2.5rem;
+  margin-bottom: 1rem;
   font-weight: 700;
   background: linear-gradient(90deg, #fff 0%, #1D9BF0 100%);
   -webkit-background-clip: text;
@@ -2595,10 +2604,10 @@ svg {
 }
 
 .fewer-bots-text {
-  font-size: 1.6rem;
+  font-size: 0.9rem;
   color: #8899A6;
-  line-height: 1.8;
-  margin-bottom: 3rem;
+  line-height: 1.6;
+  margin-bottom: 1.5rem;
   max-width: 750px;
   margin-left: auto;
   margin-right: auto;
@@ -2607,26 +2616,26 @@ svg {
 .fewer-bots-highlight {
   background: rgba(29, 155, 240, 0.1);
   border: 2px solid #1D9BF0;
-  border-radius: 16px;
-  padding: 2rem 3rem;
-  margin-top: 3rem;
+  border-radius: 12px;
+  padding: 1rem 1.5rem;
+  margin-top: 1rem;
   backdrop-filter: blur(10px);
   animation: glow 2s ease-in-out infinite;
 }
 
 .fewer-bots-highlight p {
-  font-size: 2rem;
+  font-size: 1.1rem;
   color: #1D9BF0;
   font-weight: 600;
   margin: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 1rem;
+  gap: 0.5rem;
 }
 
 .highlight-icon {
-  font-size: 2.5rem;
+  font-size: 1.3rem;
 }
 
 @keyframes glow {
@@ -2639,7 +2648,7 @@ svg {
    ======================================== */
 .facebook-section {
   background: linear-gradient(180deg, #000814 0%, #0a0a1a 100%);
-  padding: 5rem 2rem;
+  padding: 2rem 1rem;
   position: relative;
 }
 
@@ -2652,20 +2661,20 @@ svg {
 .warning-badge {
   display: inline-flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 0.5rem;
   background: linear-gradient(135deg, #FFA500 0%, #FF6B00 100%);
   color: white;
-  padding: 1rem 2rem;
+  padding: 0.6rem 1.2rem;
   border-radius: 50px;
-  font-size: 1.3rem;
+  font-size: 0.9rem;
   font-weight: 600;
-  margin-bottom: 2rem;
+  margin-bottom: 1rem;
   box-shadow: 0 4px 20px rgba(255, 165, 0, 0.4);
   animation: slideDown 0.8s ease;
 }
 
 .warning-icon {
-  font-size: 1.5rem;
+  font-size: 1rem;
   animation: shake 2s ease-in-out infinite;
 }
 
@@ -2687,50 +2696,30 @@ svg {
 }
 
 .facebook-title {
-  font-size: 3.5rem;
+  font-size: 1.4rem;
   color: #fff;
-  margin-bottom: 1rem;
+  margin-bottom: 0.5rem;
   font-weight: 700;
   animation: fadeInUp 1s ease 0.2s backwards;
 }
 
 .facebook-subtitle {
-  font-size: 1.6rem;
+  font-size: 0.9rem;
   color: #8899A6;
-  margin-bottom: 4rem;
+  margin-bottom: 1.5rem;
   animation: fadeInUp 1s ease 0.3s backwards;
-}
-
-.chart-wrapper {
-  background: rgba(21, 32, 43, 0.4);
-  border-radius: 20px;
-  padding: 3rem 2rem;
-  margin: 3rem 0;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(10px);
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
-}
-
-.chart-title {
-  font-size: 2rem;
-  color: #fff;
-  margin-bottom: 2.5rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 1rem;
 }
 
 .facebook-icon {
   background: linear-gradient(135deg, #1877F2 0%, #0C5FCD 100%);
   color: white;
-  width: 50px;
-  height: 50px;
-  border-radius: 12px;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 2rem;
+  font-size: 1.4rem;
   font-weight: bold;
   font-family: sans-serif;
   box-shadow: 0 4px 15px rgba(24, 119, 242, 0.4);
@@ -2738,16 +2727,16 @@ svg {
 
 .facebook-stats {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 2rem;
-  margin: 3rem 0;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 0.8rem;
+  margin: 1rem 0;
 }
 
 .stat-box {
   background: linear-gradient(135deg, rgba(24, 119, 242, 0.15) 0%, rgba(12, 95, 205, 0.1) 100%);
   border: 2px solid rgba(24, 119, 242, 0.3);
-  border-radius: 16px;
-  padding: 2rem;
+  border-radius: 12px;
+  padding: 1rem;
   transition: all 0.3s ease;
   animation: fadeInUp 1s ease backwards;
 }
@@ -2757,27 +2746,27 @@ svg {
 .stat-box:nth-child(3) { animation-delay: 0.6s; }
 
 .stat-box:hover {
-  transform: translateY(-5px);
+  transform: translateY(-3px);
   box-shadow: 0 10px 30px rgba(24, 119, 242, 0.3);
   border-color: #1877F2;
 }
 
 .stat-box .stat-number {
-  font-size: 3.5rem;
+  font-size: 1.4rem;
   font-weight: 700;
   color: #1877F2;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.3rem;
 }
 
 .stat-box .stat-label {
-  font-size: 1.2rem;
+  font-size: 0.8rem;
   color: #8899A6;
 }
 
 .facebook-source {
-  font-size: 1.1rem;
+  font-size: 0.8rem;
   color: #666;
-  margin-top: 2rem;
+  margin-top: 1rem;
   font-style: italic;
 }
 
@@ -2786,7 +2775,7 @@ svg {
    ======================================== */
 .traffic-section {
   background: linear-gradient(180deg, #0a0a1a 0%, #050510 100%);
-  padding: 5rem 2rem;
+  padding: 2rem 1rem;
 }
 
 .traffic-container {
@@ -2796,35 +2785,108 @@ svg {
 }
 
 .traffic-title {
-  font-size: 3rem;
+  font-size: 1.4rem;
   color: #fff;
-  margin-bottom: 1.5rem;
+  margin-bottom: 0.8rem;
   font-weight: 700;
   animation: fadeInDown 1s ease;
 }
 
 .traffic-subtitle {
-  font-size: 1.5rem;
+  font-size: 0.85rem;
   color: #8899A6;
-  line-height: 1.8;
-  margin-bottom: 4rem;
+  line-height: 1.6;
+  margin-bottom: 1.5rem;
   max-width: 900px;
   margin-left: auto;
   margin-right: auto;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 1rem;
+  gap: 0.5rem;
   animation: fadeInUp 1s ease 0.2s backwards;
+  flex-wrap: wrap;
 }
 
 .subtitle-icon {
-  font-size: 2rem;
+  font-size: 1.2rem;
 }
 
 .traffic-source {
-  font-size: 1rem;
+  font-size: 0.75rem;
   color: #666;
-  margin-top: 3rem;
+  margin-top: 1rem;
   font-style: italic;
 }
+
+/* Section 6 (game) overrides to keep tweet visible and controls reachable */
+#section6 .tweet-card {
+  padding: 1rem !important;
+  border-radius: 14px !important;
+  margin-bottom: 1rem !important;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.25) !important;
+}
+
+#section6 .profile-section { gap: 0.8rem !important; }
+
+#section6 .tweet-avatar { width: 48px !important; height: 48px !important; font-size: 20px !important; }
+
+#section6 .tweet-username { font-size: 1rem !important; }
+#section6 .tweet-handle { font-size: 0.85rem !important; }
+#section6 .tweet-menu { font-size: 1.2rem !important; }
+
+#section6 .tweet-headline { font-size: 1.05rem !important; margin-bottom: 0.4rem !important; }
+#section6 .tweet-body { font-size: 0.95rem !important; line-height: 1.4 !important; }
+
+#section6 .tweet-stats { font-size: 0.85rem !important; justify-content: flex-start !important; gap: 1rem !important; }
+#section6 .tweet-stats span { font-size: 0.85rem !important; gap: 0.4rem !important; }
+
+#section6 .game-question { margin-top: 1rem !important; margin-bottom: 1rem !important; padding: 0.6rem !important; border-radius: 12px !important; }
+#section6 .game-question p { font-size: 0.95rem !important; background: none !important; }
+
+#section6 .game-buttons { gap: 0.6rem !important; }
+#section6 .game-btn { padding: 0.6rem 1rem !important; min-width: 100px !important; font-size: 0.9rem !important; }
+
+#section6 .tweet-header, #section6 .tweet-content, #section6 .tweet-footer { overflow: visible !important; }
+#section6 .tweet-content { display: block !important; }
+
+/* Highlight bot circles in the bot-reveal viz */
+.bot-circle { filter: drop-shadow(0 6px 10px rgba(233,30,140,0.25)); }
+.bot-circle.user-highlight { stroke-width: 6 !important; filter: drop-shadow(0 10px 24px rgba(233,30,140,0.45)); transform-origin: center; }
+
+
+/* Score badge for game (appears inside .game-container) */
+.game-container { position: relative; }
+
+/* Make the interactive tweet card compact and phone-like in section 6 */
+#section6 .tweet-card {
+  width: min(380px, 90%) !important;
+  max-width: 380px !important;
+  aspect-ratio: auto !important;
+  height: auto !important;
+  max-height: calc(100vh - 260px) !important;
+  margin: 1.25rem auto !important;
+  padding: 0.9rem !important;
+  display: block !important;
+  align-items: flex-start !important;
+  justify-content: flex-start !important;
+  overflow: visible !important;
+}
+
+#section6 .tweet-card .tweet-header { margin-bottom: 0.5rem !important; }
+#section6 .tweet-card .tweet-content { margin-bottom: 0.6rem !important; }
+
+/* Slightly reduce avatar and header spacing specifically for the small card */
+#section6 .tweet-avatar { width: 44px !important; height: 44px !important; font-size: 18px !important; }
+#section6 .profile-section { gap: 0.6rem !important; }
+
+/* Ensure buttons remain visible below the card */
+#section6 .game-buttons { margin-top: 0.6rem !important; }
+
+/* On very small viewports, scale the card down a bit */
+@media (max-width: 420px) {
+  #section6 .tweet-card { width: 92% !important; max-width: 360px !important; padding: 0.7rem !important; }
+  #section6 .tweet-headline { font-size: 1rem !important; }
+  #section6 .tweet-body { font-size: 0.9rem !important; }
+}
+
