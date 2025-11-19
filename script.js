@@ -3,6 +3,33 @@ const dots = document.querySelectorAll('.dot');
 const sections = document.querySelectorAll('.section');
 const container = document.querySelector('.container');
 
+// Tooltip placement helper: clamps tooltip so it doesn't go off-screen
+function positionTooltip(selection, pageX, pageY, offsetX = 15, offsetY = 15) {
+  try {
+    const node = selection.node();
+    if (!node) return;
+
+    // ensure it's visible so measurements work
+    // we don't change visibility here; caller should ensure content is set and visible
+    const rectW = node.offsetWidth || 220;
+    const rectH = node.offsetHeight || 80;
+
+    let left = pageX + offsetX;
+    if (left + rectW + 10 > window.innerWidth) {
+      left = pageX - rectW - offsetX;
+    }
+
+    let top = pageY - rectH - offsetY;
+    if (top < 8) {
+      top = pageY + offsetY;
+    }
+
+    selection.style('left', left + 'px').style('top', top + 'px');
+  } catch (e) {
+    // silently fail if measurement isn't possible
+  }
+}
+
 // Track if chat animation has been triggered
 let chatAnimationTriggered = false;
 
@@ -1706,13 +1733,14 @@ document.addEventListener('DOMContentLoaded', () => {
           .attr('r', 11);
         
         tooltip
-          .style('left', (event.pageX + 15) + 'px')
-          .style('top', (event.pageY - 15) + 'px')
           .html(`
             <div class="tooltip-date">${d3.timeFormat('%B %d, %Y')(d.date)}</div>
             <div class="tooltip-value">Search Interest: <strong>${d.value}</strong></div>
           `)
           .classed('visible', true);
+
+        // Position tooltip and clamp to viewport so it doesn't get cut off
+        positionTooltip(tooltip, event.pageX, event.pageY, 15, 15);
       })
       .on('mouseout', function() {
         d3.select(this)
@@ -1953,12 +1981,14 @@ document.addEventListener('DOMContentLoaded', async function() {
             </div>
           </div>
         `)
-          .style('left', (event.pageX + 15) + 'px')
-          .style('top', (event.pageY - 28) + 'px')
-          .style('opacity', 1).classed('visible', true);
+          .classed('visible', true)
+          .style('opacity', 1);
+
+        // Clamp tooltip position so it remains within the viewport
+        positionTooltip(tooltip, event.pageX, event.pageY, 15, 28);
       })
       .on('mousemove', function(event) {
-        tooltip.style('left', (event.pageX + 15) + 'px').style('top', (event.pageY - 28) + 'px');
+        positionTooltip(tooltip, event.pageX, event.pageY, 15, 28);
       })
       .on('mouseout', function() {
         d3.select(this).transition().duration(150).attr('r', 10).attr('opacity', 0.9);
@@ -2059,7 +2089,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     .style('background', '#000000');
 
   const mapTooltip = d3.select('body').append('div').attr('class', 'map-tooltip')
-    .style('position', 'absolute').style('opacity', 0);
+    .style('position', 'fixed').style('opacity', 0);
 
   const projection = d3.geoNaturalEarth1()
     .scale(mapWidth / 4.5)
@@ -2134,20 +2164,22 @@ document.addEventListener('DOMContentLoaded', async function() {
               </div>
             </div>
           `)
-            .style('left', (event.pageX + 15) + 'px')
-            .style('top', (event.pageY - 28) + 'px')
-            .style('opacity', 1).classed('visible', true);
+            .classed('visible', true)
+            .style('opacity', 1);
+
+          // Position/map tooltip and clamp to viewport
+          positionTooltip(mapTooltip, event.pageX, event.pageY, 15, 28);
         }
       })
       .on('mousemove', function(event) {
-        mapTooltip.style('left', (event.pageX + 15) + 'px').style('top', (event.pageY - 28) + 'px');
+        positionTooltip(mapTooltip, event.pageX, event.pageY, 15, 28);
       })
       .on('mouseout', function() {
         const data = sentimentData[normalizeCountryName(d3.select(this).datum().properties.name)];
         if (data) {
           d3.select(this).transition().duration(200).style('opacity', 0.9);
         }
-        mapTooltip.style('opacity', 0).classed('visible', false);
+  mapTooltip.style('opacity', 0).classed('visible', false);
       })
       .on('click', function(event, d) {
         const data = sentimentData[normalizeCountryName(d.properties.name)];

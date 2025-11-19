@@ -1632,7 +1632,7 @@ svg {
   padding: 0.6rem 1rem;
   background: var(--secondary-dark);
   border: 2px solid transparent;
-  border-radius: 10px;
+  border-radius: 4px;
   color: var(--text-secondary);
   font-size: 1.3rem;
   font-weight: 700;
@@ -2552,8 +2552,6 @@ svg {
 }
 
 
-
-
 /* ========================================
    FEWER BOTS SECTION STYLES
    ======================================== */
@@ -2908,4 +2906,106 @@ svg {
   #section6 .tweet-headline { font-size: 1rem !important; }
   #section6 .tweet-body { font-size: 0.9rem !important; }
 }
+
+/* Layout fixes to keep each section's visuals visible on one screen */
+/* Constrain large chart/map/reveal containers to viewport height and make svgs scale */
+#searchTrendChart,
+#scatterChart,
+#worldMap,
+#botRevealViz,
+#facebook-chart,
+#traffic-chart {
+  max-height: calc(100vh - 160px); /* leave room for titles/controls */
+  height: auto;
+  overflow: visible; /* ensure SVG overflow isn't clipped */
+  margin-bottom: 0.5rem;
+}
+
+/* Ensure embedded svgs scale to container height when possible */
+#searchTrendChart svg,
+#scatterChart svg,
+#worldMap svg,
+#botRevealViz svg,
+#facebook-chart svg,
+#traffic-chart svg {
+  width: 100% !important;
+  height: 100% !important;
+  max-height: 100% !important;
+  display: block;
+}
+
+/* Make tweet grid compact so the selection UI fits on one screen */
+.tweet-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(44px, 1fr));
+  gap: 8px;
+  width: 100%;
+  justify-items: center;
+  align-items: center;
+  padding: 6px;
+  margin: 0 auto;
+  max-width: 980px;
+}
+
+.tweet-grid .tweet-card {
+  width: 52px;
+  height: 52px;
+  padding: 6px;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+}
+
+/* Bot reveal viz responsive container */
+#botRevealViz {
+  width: 100%;
+  max-width: 1100px;
+  max-height: calc(100vh - 180px);
+  overflow: visible;
+}
+
+/* Position tooltips relative to viewport (avoid clipping by ancestor containers) */
+.map-tooltip,
+.chart-tooltip {
+  position: fixed !important; /* position fixed so it cannot be clipped by parent overflow */
+  pointer-events: none;
+  z-index: 9999;
+}
+
+/* Slightly smaller default tooltip on small viewports */
+@media (max-width: 720px) {
+  #searchTrendChart,
+  #scatterChart,
+  #worldMap,
+  #botRevealViz {
+    max-height: calc(100vh - 120px);
+  }
+
+  .tweet-grid {
+    grid-template-columns: repeat(auto-fit, minmax(36px, 1fr));
+    gap: 6px;
+  }
+
+  .tweet-grid .tweet-card {
+    width: 44px;
+    height: 44px;
+    font-size: 10px;
+    padding: 4px;
+  }
+
+  .map-tooltip,
+  .chart-tooltip {
+    min-width: 220px;
+    padding: 12px 14px;
+    font-size: 14px;
+  }
+}
+
+/* Keep sections fully visible: reduce large min-heights inside charts where necessary */
+#searchTrendChart { min-height: 420px; }
+#scatterChart, #worldMap { min-height: 420px; }
+#botRevealViz { min-height: 320px; }
 
