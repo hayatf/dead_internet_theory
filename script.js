@@ -2090,8 +2090,8 @@ document.addEventListener('DOMContentLoaded', () => {
     'russia': { name: 'Russia', flag: '🇷🇺', color: '#9467bd', file: 'Datasets/search_country/russia_search.csv' }
   };
   
-  // Track which countries are currently visible
-  let visibleCountries = new Set(['worldwide', 'us', 'uk', 'canada', 'australia', 'russia']);
+  // Track which countries are currently visible - START WITH WORLDWIDE ONLY
+  let visibleCountries = new Set(['worldwide']);
   let allCountryData = {};
 
   // Load data from CSV files
@@ -2210,9 +2210,14 @@ document.addEventListener('DOMContentLoaded', () => {
     // Update stats, render chart, and setup controls
     updateStats(displayData.length > 0 ? displayData : currentData);
     renderChart(displayData.length > 0 ? displayData : currentData);
-    renderOverviewChart(); // Always update overview after zoom/filter
     setupControls(currentData); // Always use full data for controls
     createCountryControls();
+    
+    // Update impact indicator if an event is selected
+    const eventSelect = document.getElementById('eventSelect');
+    if (eventSelect && eventSelect.value && eventSelect.value !== '') {
+      updateImpactIndicator(eventSelect.value);
+    }
   }
   
   // Create flag button controls
@@ -2267,8 +2272,39 @@ document.addEventListener('DOMContentLoaded', () => {
       controlsContainer.appendChild(button);
     }
     
-    // Buttons are already in the sidebar, no need to insert anywhere
+    // Show/hide reset button based on selection
+    const resetBtn = document.getElementById('resetCountries');
+    if (resetBtn) {
+      if (visibleCountries.size === 1 && visibleCountries.has('worldwide')) {
+        resetBtn.style.display = 'none';
+      } else {
+        resetBtn.style.display = 'flex';
+      }
+    }
+    
     console.log('Country controls created in sidebar');
+  }
+  
+  // Setup reset button
+  const resetCountriesBtn = document.getElementById('resetCountries');
+  if (resetCountriesBtn) {
+    resetCountriesBtn.addEventListener('click', () => {
+      visibleCountries.clear();
+      visibleCountries.add('worldwide');
+      updateChartData();
+    });
+  }
+  
+  // Setup intro message close button
+  const closeIntroBtn = document.getElementById('closeIntroMessage');
+  const introMessage = document.getElementById('trendIntroMessage');
+  if (closeIntroBtn && introMessage) {
+    closeIntroBtn.addEventListener('click', () => {
+      introMessage.style.animation = 'fadeOut 0.3s ease-out forwards';
+      setTimeout(() => {
+        introMessage.style.display = 'none';
+      }, 300);
+    });
   }
   
   function toggleCountry(countryCode) {
@@ -2890,6 +2926,24 @@ Week,Dead Internet Theory: (Worldwide)
       
       // Add the line path with special styling for worldwide
       const isWorldwide = country === 'worldwide';
+      
+      // Create area generator
+      const area = d3.area()
+        .x(d => xScale(d.date))
+        .y0(height)
+        .y1(d => yScale(d.value))
+        .curve(d3.curveMonotoneX);
+      
+      // Add semi-transparent area fill
+      svg.append('path')
+        .datum(sortedData)
+        .attr('class', `country-area country-area-${country}`)
+        .attr('fill', color)
+        .attr('d', area)
+        .style('opacity', isWorldwide ? 0.15 : 0.1)
+        .style('pointer-events', 'none');
+      
+      // Add the line path on top
       const linePath = svg.append('path')
         .datum(sortedData)
         .attr('class', `country-line country-${country}`)
@@ -2919,6 +2973,12 @@ Week,Dead Internet Theory: (Worldwide)
             .attr('stroke-width', isWorldwide ? 4 : 3)
             .style('opacity', 1);
           
+          // Highlight the area fill
+          svg.select(`.country-area-${country}`)
+            .transition()
+            .duration(100)
+            .style('opacity', isWorldwide ? 0.3 : 0.25);
+          
           tooltip
             .style('opacity', 1)
             .html(`${flag} ${countryName}`);
@@ -2929,6 +2989,12 @@ Week,Dead Internet Theory: (Worldwide)
             .duration(100)
             .attr('stroke-width', isWorldwide ? 3 : 2)
             .style('opacity', isWorldwide ? 1 : 0.8);
+          
+          // Reset area fill opacity
+          svg.select(`.country-area-${country}`)
+            .transition()
+            .duration(100)
+            .style('opacity', isWorldwide ? 0.15 : 0.1);
           
           tooltip.style('opacity', 0);
         })
@@ -2991,11 +3057,11 @@ Week,Dead Internet Theory: (Worldwide)
       fullDataset = [...data];
     }
     
-    // Render overview chart
+    // Render overview chart after a brief delay
     setTimeout(() => {
       renderOverviewChart();
-    }, 500);
-    
+    }, 100);
+
     console.log(`Chart rendered with ${dataByCountry.size} countries`);
   }
   
@@ -3092,6 +3158,12 @@ Week,Dead Internet Theory: (Worldwide)
     console.log('Zooming to event:', event.name);
     console.log('Zoom range:', event.zoomRange.start, 'to', event.zoomRange.end);
     
+    // Set the currentZoomRange so overview chart can highlight it
+    currentZoomRange = {
+      start: event.zoomRange.start,
+      end: event.zoomRange.end
+    };
+    
     // Filter data to zoom range
     const zoomedData = currentData.filter(d => 
       d.date >= event.zoomRange.start && d.date <= event.zoomRange.end
@@ -3183,108 +3255,84 @@ Week,Dead Internet Theory: (Worldwide)
   }
   
   function updateChart(data) {
-    // Do NOT set currentZoomRange here; only set by brush or explicit zoom
     // Update scales
     xScale.domain(d3.extent(data, d => d.date));
     yScale.domain([0, d3.max(data, d => d.value) * 1.15]);
     // Clear and re-render
     renderChart(data);
-    renderOverviewChart(); // Always update overview after zoom
+    // Update overview to show current zoom
+    renderOverviewChart();
   }
   
-  // Overview chart function
+  // Simple overview chart
   function renderOverviewChart() {
-    const overviewContainer = document.getElementById('overviewChart');
-    if (!overviewContainer) return;
+    const container = document.getElementById('overviewChart');
+    if (!container || !fullDataset || fullDataset.length === 0) return;
     
-    // Always use the true full dataset for the overview xScale
-    const overviewData = fullDataset && fullDataset.length ? fullDataset : currentData;
-    if (!overviewData || overviewData.length === 0) {
-      d3.select('#overviewChart').selectAll('*').remove();
-      return;
-    }
-
-    // Only create the SVG and brush once
-    const margin = { top: 8, right: 15, bottom: 15, left: 15 };
-    const containerWidth = overviewContainer.clientWidth || 800;
-    const width = containerWidth - margin.left - margin.right;
-    const height = 60 - margin.top - margin.bottom;
-
-    // Remove previous SVG if it exists
-    d3.select('#overviewChart').selectAll('svg').remove();
-    overviewSVG = d3.select('#overviewChart')
+    d3.select('#overviewChart').selectAll('*').remove();
+    
+    const margin = {top: 5, right: 10, bottom: 5, left: 10};
+    const width = container.clientWidth - margin.left - margin.right;
+    const height = 50;
+    
+    const svg = d3.select('#overviewChart')
       .append('svg')
-      .attr('width', containerWidth)
-      .attr('height', 60)
-      .append('g')
+      .attr('width', container.clientWidth)
+      .attr('height', 60);
+      
+    const g = svg.append('g')
       .attr('transform', `translate(${margin.left},${margin.top})`);
-
-    // Group data by country
-    const dataByCountry = d3.group(overviewData, d => d.country);
-
-    // Scales for overview (always use full min/max date)
-    const minDate = d3.min(fullDataset, d => d.date);
-    const maxDate = d3.max(fullDataset, d => d.date);
-    overviewXScale = d3.scaleTime()
-      .domain([minDate, maxDate])
+    
+    // Scales based on FULL dataset
+    const x = d3.scaleTime()
+      .domain(d3.extent(fullDataset, d => d.date))
       .range([0, width]);
-
-    const yScale = d3.scaleLinear()
-      .domain(d3.extent(overviewData, d => d.value))
+      
+    const y = d3.scaleLinear()
+      .domain([0, d3.max(fullDataset, d => d.value)])
       .range([height, 0]);
-
-    // Create line generator
-    const line = d3.line()
-      .x(d => overviewXScale(d.date))
-      .y(d => yScale(d.value))
-      .curve(d3.curveMonotoneX);
-
-    // Draw lines for each visible country
-    dataByCountry.forEach((countryDataArray, country) => {
-      const color = countryData[country]?.color || '#1f77b4';
-      const sortedData = countryDataArray.sort((a, b) => a.date - b.date);
-      const isWorldwide = country === 'worldwide';
-      overviewSVG.append('path')
-        .datum(sortedData)
-        .attr('class', `overview-line overview-${country}`)
-        .attr('fill', 'none')
-        .attr('stroke', color)
-        .attr('stroke-width', isWorldwide ? 1.5 : 1)
-        .attr('d', line)
-        .style('opacity', isWorldwide ? 1 : 0.8);
+    
+    // Draw line for each visible country
+    const byCountry = d3.group(fullDataset, d => d.country);
+    
+    byCountry.forEach((data, country) => {
+      if (visibleCountries.has(country)) {
+        const line = d3.line()
+          .x(d => x(d.date))
+          .y(d => y(d.value))
+          .curve(d3.curveMonotoneX);
+          
+        const color = countryData[country]?.color || '#1f77b4';
+        
+        g.append('path')
+          .datum(data.sort((a, b) => a.date - b.date))
+          .attr('fill', 'none')
+          .attr('stroke', color)
+          .attr('stroke-width', country === 'worldwide' ? 1.5 : 1)
+          .attr('d', line)
+          .attr('opacity', 0.7);
+      }
     });
-
-    // Persistent brush instance
-    if (!overviewBrush) {
-      overviewBrush = d3.brushX()
-        .extent([[0, 0], [width, height]])
-        .on('brush end', function(event) {
-          if (!event.selection) return;
-          const [x0, x1] = event.selection;
-          const domain = [overviewXScale.invert(x0), overviewXScale.invert(x1)];
-          // Update current zoom range and main chart
-          currentZoomRange = {
-            start: domain[0],
-            end: domain[1]
-          };
-          updateChart(currentData.filter(d => d.date >= domain[0] && d.date <= domain[1]));
-        });
-    }
-    // Add brush
-    const brushGroup = overviewSVG.append('g')
-      .attr('class', 'brush')
-      .call(overviewBrush);
-    // Style brush
-    brushGroup.selectAll('.selection').style('opacity', 0.1);
-    brushGroup.selectAll('.handle').style('opacity', 0.3);
-
-    // If we have a zoom range, update the brush selection programmatically
-    if (currentZoomRange && currentZoomRange.start && currentZoomRange.end) {
-      let start = currentZoomRange.start < minDate ? minDate : currentZoomRange.start;
-      let end = currentZoomRange.end > maxDate ? maxDate : currentZoomRange.end;
-      overviewSVG.select('.brush').call(overviewBrush.move, [overviewXScale(start), overviewXScale(end)]);
+    
+    // Highlight current view from main chart
+    const currentDomain = xScale.domain();
+    if (currentDomain && currentDomain[0] && currentDomain[1]) {
+      const x0 = x(currentDomain[0]);
+      const x1 = x(currentDomain[1]);
+      
+      g.append('rect')
+        .attr('x', x0)
+        .attr('y', 0)
+        .attr('width', x1 - x0)
+        .attr('height', height)
+        .attr('fill', 'rgba(74, 158, 255, 0.3)')
+        .attr('stroke', '#4a9eff')
+        .attr('stroke-width', 2)
+        .attr('rx', 2);
     }
   }
+  
+
   
   // Add scroll animation for chart appearance
   const observer = new IntersectionObserver((entries) => {
@@ -3638,6 +3686,10 @@ Week,Dead Internet Theory: (Worldwide)
       // If no event selected (placeholder), show full chart
       if (!selectedEvent || selectedEvent === '') {
         console.log('Showing full chart');
+        
+        // Reset zoom range
+        currentZoomRange = null;
+        
         renderChart(currentData);
         
         // Reset impact value to placeholder
@@ -3679,79 +3731,59 @@ document.addEventListener('DOMContentLoaded', () => {
   // Key AI and Bot Innovation Events with search traffic data
   const eventsData = {
     'facebook-ai-policy': {
-      name: 'Facebook adds first AI policy - everything has to say that it is made by AI (April 5th, 2024)',
-      date: new Date('2024-04-05'),
-      peakValue: 95,
-      impact: 90, // Very high impact
+      name: 'Facebook "AI Slop" Response',
+      date: new Date('2024-03-31'),
+      impact: 95, // Massive spike in search interest - highest on record
       description: 'Very High Impact',
-      articleUrl: 'https://about.fb.com/news/2024/04/metas-approach-to-labeling-ai-generated-content-and-manipulated-media/',
       showLine: true,
       zoomRange: {
-        start: new Date('2024-03-15'),
-        end: new Date('2024-04-25')
+        start: new Date('2024-03-01'),
+        end: new Date('2024-05-01')
       }
     },
     'chatgpt-launch': {
-      name: 'ChatGPT Launch (November 30th, 2022)',
+      name: 'ChatGPT Launch',
       date: new Date('2022-11-30'),
-      peakValue: 89,
-      impact: 75, // Medium-high impact
+      impact: 65, // Moderate increase, beginning of trend
       description: 'High Impact',
       showLine: true,
       zoomRange: {
-        start: new Date('2022-11-01'),
-        end: new Date('2022-12-31')
+        start: new Date('2022-10-30'),
+        end: new Date('2023-01-15')
       }
     },
     'gpt4-release': {
-      name: 'GPT-4 Release (March 14th, 2023)',
+      name: 'GPT-4 Release',
       date: new Date('2023-03-14'),
-      peakValue: 142,
-      impact: 85, // High impact
+      impact: 85, // Major spike in March 2023
       description: 'Very High Impact',
       showLine: true,
       zoomRange: {
         start: new Date('2023-02-15'),
-        end: new Date('2023-04-15')
+        end: new Date('2023-04-30')
       }
     },
-    'bing-ai': {
-      name: 'Bing AI Integration (February 7th, 2023)',
-      date: new Date('2023-02-07'),
-      peakValue: 78,
-      impact: 45, // Medium impact
-      description: 'Medium Impact',
-      showLine: true,
-      zoomRange: {
-        start: new Date('2023-01-15'),
-        end: new Date('2023-03-15')
-      }
-    },
-    'ai-regulation': {
-      name: 'EU AI Act Discussions (June 2023)',
-      date: new Date('2023-06-15'),
-      peakValue: 156,
-      impact: 80, // High impact
+    'openai-board-crisis': {
+      name: 'OpenAI Board Crisis',
+      date: new Date('2023-11-26'),
+      impact: 78, // Significant increase during crisis period
       description: 'High Impact',
       showLine: true,
       zoomRange: {
-        start: new Date('2023-05-15'),
-        end: new Date('2023-07-15')
-      }
-    },
-    'twitter-bots': {
-      name: 'Twitter Bot Purge (October 2022)',
-      date: new Date('2022-10-15'),
-      peakValue: 94,
-      impact: 60, // Medium-high impact
-      description: 'Medium-High Impact',
-      showLine: true,
-      zoomRange: {
-        start: new Date('2022-09-15'),
-        end: new Date('2022-11-15')
+        start: new Date('2023-11-01'),
+        end: new Date('2023-12-31')
       }
     }
   };
+  
+  // Add event listener for the dropdown
+  eventSelect.addEventListener('change', () => {
+    const selectedEvent = eventSelect.value;
+    updateImpactIndicator(selectedEvent);
+  });
+  
+  // Initialize with empty state
+  updateImpactIndicator('');
   
   // Function to determine impact level text based on numeric impact value
   function getImpactLevelText(impactValue) {
@@ -3801,20 +3833,110 @@ document.addEventListener('DOMContentLoaded', () => {
     const event = eventsData[eventKey];
     if (!event) return;
     
-    const impact = event.impact;
+    // Calculate impact based on average of visible countries during event period
+    let impact = event.impact; // Default to base impact
+    
+    // Special handling for ChatGPT launch: no impact
+    if (eventKey === 'chatgpt-launch') {
+      impact = 0;
+    }
+    // Special handling for GPT-4 release: low impact only for worldwide and US
+    else if (eventKey === 'gpt4-release') {
+      // Check if only worldwide and/or US are selected
+      const relevantCountries = Array.from(visibleCountries).filter(c => c === 'worldwide' || c === 'us');
+      
+      if (relevantCountries.length === 0) {
+        // None of the relevant countries are selected
+        impact = 0;
+      } else if (fullDataset && visibleCountries && visibleCountries.size > 0) {
+        // Calculate impact only for worldwide and US
+        const eventStart = event.zoomRange.start;
+        const eventEnd = event.zoomRange.end;
+        
+        let totalAverage = 0;
+        let countryCount = 0;
+        
+        for (const countryCode of relevantCountries) {
+          const countryDataset = fullDataset[countryCode];
+          if (!countryDataset) continue;
+          
+          const eventPeriodData = countryDataset.filter(d => 
+            d.date >= eventStart && d.date <= eventEnd
+          );
+          
+          if (eventPeriodData.length > 0) {
+            const countryAverage = eventPeriodData.reduce((sum, d) => sum + d.value, 0) / eventPeriodData.length;
+            totalAverage += countryAverage;
+            countryCount++;
+          }
+        }
+        
+        if (countryCount > 0) {
+          const avgValue = totalAverage / countryCount;
+          // Cap at 35 (low impact) for GPT-4
+          impact = Math.min(35, Math.max(0, avgValue));
+        }
+      }
+    }
+    // Normal calculation for other events
+    else if (fullDataset && visibleCountries && visibleCountries.size > 0) {
+      const eventStart = event.zoomRange.start;
+      const eventEnd = event.zoomRange.end;
+      
+      let totalAverage = 0;
+      let countryCount = 0;
+      
+      // Calculate average for each visible country
+      for (const countryCode of visibleCountries) {
+        const countryDataset = fullDataset[countryCode];
+        if (!countryDataset) continue;
+        
+        // Filter data points within event range
+        const eventPeriodData = countryDataset.filter(d => 
+          d.date >= eventStart && d.date <= eventEnd
+        );
+        
+        if (eventPeriodData.length > 0) {
+          const countryAverage = eventPeriodData.reduce((sum, d) => sum + d.value, 0) / eventPeriodData.length;
+          totalAverage += countryAverage;
+          countryCount++;
+        }
+      }
+      
+      // Calculate final impact as percentage (normalized to 0-100 scale)
+      if (countryCount > 0) {
+        const avgValue = totalAverage / countryCount;
+        // Normalize: assume max search interest is around 100, scale to percentage
+        impact = Math.min(100, Math.max(0, avgValue));
+      }
+    }
+    
     const fillWidth = `${impact}%`;
     const thumbPosition = `calc(${impact}% - 9px)`;
     
-    // Update the visual indicator
+    // Update the visual indicator with animation
+    impactFill.style.transition = 'width 0.6s cubic-bezier(0.4, 0, 0.2, 1), background 0.6s ease';
+    impactThumb.style.transition = 'left 0.6s cubic-bezier(0.4, 0, 0.2, 1), background 0.3s ease, box-shadow 0.3s ease';
+    
     impactFill.style.width = fillWidth;
     impactThumb.style.left = thumbPosition;
     
     // Update impact value text
-    const impactValue = document.getElementById('impactValue');
-    if (impactValue) {
-      const impactText = getImpactLevelText(event.impact);
-      impactValue.textContent = `${event.name} - ${impactText}`;
-      impactValue.style.color = '#ffd700';
+    const impactValueEl = document.getElementById('impactValue');
+    if (impactValueEl) {
+      const impactText = getImpactLevelText(impact);
+      impactValueEl.textContent = impactText;
+      
+      // Color based on impact level
+      if (impact >= 80) {
+        impactValueEl.style.color = '#ffd700';
+      } else if (impact >= 60) {
+        impactValueEl.style.color = '#ff9500';
+      } else if (impact > 0) {
+        impactValueEl.style.color = '#1D9BF0';
+      } else {
+        impactValueEl.style.color = '#555';
+      }
     }
     
     // Add visual feedback based on impact level
@@ -3825,8 +3947,10 @@ document.addEventListener('DOMContentLoaded', () => {
       glowColor = '#ff9500'; // Orange for medium-high
     } else if (impact >= 40) {
       glowColor = '#1D9BF0'; // Blue for medium
-    } else {
+    } else if (impact > 0) {
       glowColor = '#71767B'; // Gray for low
+    } else {
+      glowColor = '#3a3a3a'; // Dark gray for no impact
     }
     
     impactThumb.style.background = glowColor;
@@ -3837,8 +3961,10 @@ document.addEventListener('DOMContentLoaded', () => {
       impactFill.style.background = `linear-gradient(90deg, #1D9BF0, #ffd700)`;
     } else if (impact >= 40) {
       impactFill.style.background = `linear-gradient(90deg, #1D9BF0, #ff9500)`;
-    } else {
+    } else if (impact > 0) {
       impactFill.style.background = `linear-gradient(90deg, #71767B, #1D9BF0)`;
+    } else {
+      impactFill.style.background = `#3a3a3a`;
     }
   }
   
@@ -4297,6 +4423,12 @@ document.addEventListener('DOMContentLoaded', async function() {
     'United States': { nervous: 52.9, excited: 21.9, count: 1100 }
   };
 
+
+  // Functions that let the sentiment bar chart control the globe.
+  // They are assigned concrete implementations once the globe is initialised.
+  let focusCountryOnGlobe = function(countryName) {};
+  let stopGlobeRotation = function() {};
+
   const normalizeCountryName = (name) => {
     const nameMap = {
       'United States of America': 'United States',
@@ -4307,353 +4439,924 @@ document.addEventListener('DOMContentLoaded', async function() {
     return nameMap[name] || name;
   };
 
+
   // ========================================
-  // SCATTER PLOT - EXTRA LARGE & INTERACTIVE
+  // SENTIMENT GAP BAR CHART - EXTRA LARGE & INTERACTIVE
   // ========================================
   const scatterContainer = document.getElementById('scatterChart');
   if (scatterContainer) {
-    const margin = { top: 40, right: 80, bottom: 80, left: 80 };
-    const containerWidth = Math.min(1100, window.innerWidth * 0.85);
+    const margin = { top: 30, right: 30, bottom: 50, left: 180 };
+    const containerWidth = scatterContainer.offsetWidth || 800;
+    const containerHeight = scatterContainer.offsetHeight || 700;
     const width = containerWidth - margin.left - margin.right;
-    const height = 500 - margin.top - margin.bottom;
+    const height = containerHeight - margin.top - margin.bottom;
+
+    // Prepare data array with nervous–excited gap
+    const dataArray = Object.entries(sentimentData).map(([country, d]) => ({
+      country,
+      excited: d.excited,
+      nervous: d.nervous,
+      count: d.count,
+      gap: d.nervous - d.excited // positive = more nervous than excited
+    }))
+    // sort by gap descending (more nervous at top)
+    .sort((a, b) => b.gap - a.gap);
+
+    // Color scale shared with the globe (more nervous = redder)
+    const nervousColorScale = d3.scaleSequential()
+      .domain([25, 60])
+      .interpolator(d3.interpolateRgb('#4AADFF', '#FF4444'));
+
+    // Clear any previous chart
+    scatterContainer.innerHTML = '';
 
     const svg = d3.select('#scatterChart')
       .append('svg')
       .attr('width', containerWidth)
-      .attr('height', 500)
-      .attr('viewBox', `0 0 ${containerWidth} 500`)
+      .attr('height', height + margin.top + margin.bottom)
+      .attr('viewBox', `0 0 ${containerWidth} ${height + margin.top + margin.bottom}`)
       .attr('preserveAspectRatio', 'xMidYMid meet')
-      .style('background', '#000000')
-      .style('display', 'block')
-      .style('margin', '0 auto')
       .append('g')
       .attr('transform', `translate(${margin.left},${margin.top})`);
 
-    const xScale = d3.scaleLinear().domain([15, 65]).range([0, width]);
-    const yScale = d3.scaleLinear().domain([25, 65]).range([height, 0]);
+    const maxAbsGap = d3.max(dataArray, d => Math.abs(d.gap)) || 0;
 
-    // Enhanced grid with better spacing for zoomed view
-    svg.append('g').selectAll('line.grid-line-x').data(xScale.ticks(10)).enter().append('line')
-      .attr('class', 'grid-line').attr('x1', d => xScale(d)).attr('x2', d => xScale(d)).attr('y1', 0).attr('y2', height);
-    svg.append('g').selectAll('line.grid-line-y').data(yScale.ticks(7)).enter().append('line')
-      .attr('class', 'grid-line').attr('x1', 0).attr('x2', width).attr('y1', d => yScale(d)).attr('y2', d => yScale(d));
+    const xScale = d3.scaleLinear()
+      .domain([-maxAbsGap, maxAbsGap])
+      .range([0, width])
+      .nice();
 
-    // Reference lines with labels
-    svg.append('line').attr('class', 'reference-line')
-      .attr('x1', xScale(50)).attr('x2', xScale(50)).attr('y1', 0).attr('y2', height);
-    svg.append('line').attr('class', 'reference-line')
-      .attr('x1', 0).attr('x2', width).attr('y1', yScale(50)).attr('y2', yScale(50));
+    const yScale = d3.scaleBand()
+      .domain(dataArray.map(d => d.country))
+      .range([0, height])
+      .padding(0.25);
 
-    svg.append('text').attr('x', xScale(50) + 8).attr('y', 20)
-      .style('fill', '#1D9BF0').style('font-size', '18px').style('font-weight', '700')
-      .text('Global');
+    // Zero line
+    svg.append('line')
+      .attr('class', 'gap-zero-line')
+      .attr('x1', xScale(0))
+      .attr('x2', xScale(0))
+      .attr('y1', 0)
+      .attr('y2', height)
+      .style('stroke', 'rgba(231,233,234,0.4)')
+      .style('stroke-width', 1.5)
+      .style('stroke-dasharray', '4,4');
 
-    const tooltip = d3.select('body').append('div').attr('class', 'map-tooltip')
-      .style('position', 'absolute').style('opacity', 0);
+    // Grid lines
+    svg.append('g')
+      .attr('class', 'gap-x-grid')
+      .call(
+        d3.axisTop(xScale)
+          .ticks(7)
+          .tickSize(-height)
+          .tickFormat(d => (d === 0 ? '' : (d > 0 ? '+' + d.toFixed(0) : d.toFixed(0))))
+      )
+      .selectAll('line')
+      .style('stroke', 'rgba(231,233,234,0.15)')
+      .style('stroke-dasharray', '3,6');
 
-    const dataArray = Object.entries(sentimentData).map(([country, data]) => ({ country, ...data }));
+    svg.selectAll('.gap-x-grid .domain').remove();
 
-    // Larger, more interactive dots
-    const dots = svg.selectAll('.scatter-dot').data(dataArray).enter().append('circle')
-      .attr('class', 'scatter-dot')
-      .attr('cx', d => xScale(d.excited))
-      .attr('cy', d => yScale(d.nervous))
-      .attr('r', 0)
-      .attr('fill', '#1D9BF0')
-      .attr('opacity', 0.9)
-      .attr('stroke', '#000000')
-      .attr('stroke-width', 2);
+    // Bars
+    const bars = svg.selectAll('.gap-bar')
+      .data(dataArray)
+      .enter()
+      .append('rect')
+      .attr('class', 'gap-bar')
+      .attr('y', d => yScale(d.country))
+      .attr('x', xScale(0))
+      .attr('height', yScale.bandwidth())
+      .attr('width', 0)
+      .attr('rx', 8)
+      .style('fill', d => nervousColorScale(d.nervous))
+      .style('opacity', 0.9);
 
-    dots.transition().duration(1000).delay((d, i) => i * 40).attr('r', 10);
+    bars.transition()
+      .duration(900)
+      .delay((d, i) => i * 20)
+      .attr('x', d => xScale(Math.min(0, d.gap)))
+      .attr('width', d => Math.abs(xScale(d.gap) - xScale(0)));
 
-    dots.on('mouseover', function(event, d) {
-        d3.select(this).transition().duration(150).attr('r', 15).attr('opacity', 1);
-        
-        // Show or highlight label for this country
-        const existingLabel = svg.selectAll('.scatter-label')
-          .filter(label => label.country === d.country);
-        
-        if (!existingLabel.empty()) {
-          // Highlight existing label
-          existingLabel
-            .style('opacity', 1)
-            .style('font-weight', '900')
-            .style('font-size', '15px')
-            .style('fill', '#1D9BF0');
-        } else {
-          // Create temporary label for unlabeled country
-          svg.append('text')
-            .attr('class', 'scatter-label-temp')
-            .attr('x', xScale(d.excited) + 12)
-            .attr('y', yScale(d.nervous) + 5)
-            .attr('text-anchor', 'start')
-            .text(d.country)
-            .style('fill', '#1D9BF0')
-            .style('font-size', '14px')
-            .style('font-weight', '700')
-            .style('pointer-events', 'none')
-            .style('text-shadow', '2px 2px 4px rgba(0, 0, 0, 1), -2px -2px 4px rgba(0, 0, 0, 1), 2px -2px 4px rgba(0, 0, 0, 1), -2px 2px 4px rgba(0, 0, 0, 1), 0 0 6px rgba(0, 0, 0, 1)')
-            .style('opacity', 0)
-            .transition().duration(150).style('opacity', 1);
-        }
-        
-        tooltip.html(`
-          <div class="country-name">${d.country}</div>
-          <div class="sentiment-values">
-            <strong>Excited:</strong> ${d.excited.toFixed(1)}%<br/>
-            <strong>Nervous:</strong> ${d.nervous.toFixed(1)}%<br/>
-            <strong>Respondents:</strong> ${d.count.toLocaleString()}<br/>
-            <div style="margin-top:8px; padding-top:8px; border-top:1px solid rgba(29,155,240,0.3);">
-              <em style="color:#71767B;">Sentiment: ${d.excited > d.nervous ? 'More Excited' : 'More Nervous'}</em>
-            </div>
-          </div>
-        `)
-          .classed('visible', true)
-          .style('opacity', 1);
-
-        // Clamp tooltip position so it remains within the viewport
-        positionTooltip(tooltip, event.pageX, event.pageY, 15, 28);
-      })
-      .on('mousemove', function(event) {
-        positionTooltip(tooltip, event.pageX, event.pageY, 15, 28);
-      })
-      .on('mouseout', function() {
-        d3.select(this).transition().duration(150).attr('r', 10).attr('opacity', 0.9);
-        
-        // Reset permanent labels
-        svg.selectAll('.scatter-label')
-          .style('opacity', 1)
-          .style('font-weight', '600')
-          .style('font-size', '14px')
-          .style('fill', '#E7E9EA');
-        
-        // Remove temporary labels
-        svg.selectAll('.scatter-label-temp').remove();
-        
-        tooltip.style('opacity', 0).classed('visible', false);
-      })
-      .on('click', function(event, d) {
-        // Pulse animation on click
+    // Add hover effects and click interactivity to bars
+    bars
+      .style('cursor', 'pointer')
+      .on('mouseenter', function(event, d) {
         d3.select(this)
-          .transition().duration(200).attr('r', 20)
-          .transition().duration(200).attr('r', 10);
+          .transition()
+          .duration(200)
+          .style('opacity', 1)
+          .attr('rx', 10)
+          .style('filter', 'brightness(1.2)');
+      })
+      .on('mouseleave', function(event, d) {
+        d3.select(this)
+          .transition()
+          .duration(200)
+          .style('opacity', 0.9)
+          .attr('rx', 8)
+          .style('filter', 'brightness(1)');
       });
 
-    // Show all 21 countries from the dataset with labels
-    const labeledCountries = new Set([
-      'United States', 'United Kingdom', 'Australia', 'Canada', 
-      'France', 'Germany', 'Spain', 'Italy', 'Poland', 'Portugal',
-      'Japan', 'China', 'India', 'Indonesia', 'Pakistan',
-      'Brazil', 'Argentina', 'Chile', 'Mexico', 
-      'South Africa', 'Kenya'
-    ]);
-    
-    svg.selectAll('.scatter-label')
-      .data(dataArray.filter(d => labeledCountries.has(d.country)))
-      .enter().append('text')
-      .attr('class', 'scatter-label')
-      .attr('x', d => {
-        const x = xScale(d.excited);
-        // Position labels based on data clustering
-        if (d.country === 'India' || d.country === 'Indonesia') return x + 15;
-        if (d.country === 'Australia' || d.country === 'United Kingdom' || d.country === 'Portugal') return x - 15;
-        return x > width / 2 ? x + 15 : x - 15;
-      })
-      .attr('y', d => {
-        const y = yScale(d.nervous);
-        // Adjust vertical position for readability
-        if (d.country === 'Indonesia') return y - 8;
-        if (d.country === 'India') return y + 5;
-        if (d.country === 'Kenya') return y - 8;
-        return y + 5;
-      })
-      .attr('text-anchor', d => {
-        if (d.country === 'India' || d.country === 'Indonesia') return 'start';
-        if (d.country === 'Australia' || d.country === 'United Kingdom' || d.country === 'Portugal') return 'end';
-        const x = xScale(d.excited);
-        return x > width / 2 ? 'start' : 'end';
-      })
-      .text(d => d.country)
+    // Country labels
+    svg.append('g')
+      .attr('class', 'gap-y-axis')
+      .call(d3.axisLeft(yScale))
+      .selectAll('text')
       .style('fill', '#E7E9EA')
       .style('font-size', '14px')
       .style('font-weight', '600')
-      .style('pointer-events', 'none')
-      .style('opacity', 0)
-      .transition().duration(600).delay(1200).style('opacity', 1);
+      .style('cursor', 'pointer');
 
-    // Enhanced axes
-    svg.append('g').attr('class', 'scatter-axis')
-      .attr('transform', `translate(0,${height})`)
-      .call(d3.axisBottom(xScale).ticks(10).tickFormat(d => d + '%').tickSize(10));
-    
-    svg.append('g').attr('class', 'scatter-axis')
-      .call(d3.axisLeft(yScale).ticks(10).tickFormat(d => d + '%').tickSize(10));
+    svg.selectAll('.gap-y-axis .domain, .gap-y-axis line').remove();
 
-    // Axis labels
-    svg.append('text').attr('x', width / 2).attr('y', height + 60)
-      .style('text-anchor', 'middle').style('fill', '#E7E9EA')
-      .style('font-size', '13px').style('font-weight', '700')
-      .text('Excited about AI growth (%)');
+    // Gap labels at bar ends
+    svg.selectAll('.gap-label')
+      .data(dataArray)
+      .enter()
+      .append('text')
+      .attr('class', 'gap-label')
+      .attr('y', d => yScale(d.country) + yScale.bandwidth() / 2 + 4)
+      .attr('x', d => d.gap >= 0 ? xScale(d.gap) + 8 : xScale(d.gap) - 8)
+      .attr('text-anchor', d => d.gap >= 0 ? 'start' : 'end')
+      .style('fill', '#E7E9EA')
+      .style('font-size', '13px')
+      .style('font-weight', '700')
+      .style('opacity', 0.9)
+      .text(d => `${d.gap >= 0 ? '+' : ''}${d.gap.toFixed(1)} pts`);
+
+    // Axis titles
+    svg.append('text')
+      .attr('class', 'axis-title')
+      .attr('x', width / 2)
+      .attr('y', height + 40)
+      .attr('text-anchor', 'middle')
+      .style('fill', '#E7E9EA')
+      .style('font-size', '13px')
+      .style('font-weight', '700')
+      .text('Sentiment gap (Nervous − Excited, percentage points)');
+
+    svg.append('text')
+      .attr('class', 'axis-label-left')
+      .attr('x', xScale(-maxAbsGap))
+      .attr('y', -18)
+      .attr('text-anchor', 'start')
+      .style('fill', '#4AADFF')
+      .style('font-size', '12px')
+      .style('font-weight', '600')
+      .text('More excited about AI');
+
+    svg.append('text')
+      .attr('class', 'axis-label-right')
+      .attr('x', xScale(maxAbsGap))
+      .attr('y', -18)
+      .attr('text-anchor', 'end')
+      .style('fill', '#FF6B6B')
+      .style('font-size', '12px')
+      .style('font-weight', '600')
+      .text('More nervous about AI');
+
+    // Tooltip (re-use if it already exists)
+    let gapTooltip = d3.select('body').select('.chart-tooltip');
+    if (gapTooltip.empty()) {
+      gapTooltip = d3.select('body')
+        .append('div')
+        .attr('class', 'chart-tooltip');
+    }
+
+    bars
+      .on('mouseover', function(event, d) {
+        d3.select(this)
+          .transition()
+          .duration(150)
+          .style('opacity', 1);
+
+        const direction = d.gap >= 0 ? 'more nervous than excited' : 'more excited than nervous';
+
+        gapTooltip
+          .html(`
+            <div class="tooltip-date">${d.country}</div>
+            <div class="tooltip-value">
+              Nervous: <strong>${d.nervous.toFixed(1)}%</strong><br/>
+              Excited: <strong>${d.excited.toFixed(1)}%</strong><br/>
+              Gap: <strong>${d.gap >= 0 ? '+' : ''}${d.gap.toFixed(1)} pts</strong><br/>
+            </div>
+            <div style="margin-top: 0.6rem; font-size: 0.9rem;">
+              People here are <strong>${Math.abs(d.gap).toFixed(1)} points ${direction}</strong> about AI.<br/>
+              <span style="opacity:0.8;">Respondents: ${d.count.toLocaleString()}</span>
+            </div>
+          `)
+          .style('opacity', 1)
+          .classed('visible', true);
+
+        positionTooltip(gapTooltip, event.pageX, event.pageY, 15, 24);
+      })
+      .on('mousemove', function(event) {
+        positionTooltip(gapTooltip, event.pageX, event.pageY, 15, 24);
+      })
+      .on('mouseout', function() {
+        d3.select(this)
+          .transition()
+          .duration(150)
+          .style('opacity', 0.9);
+
+        gapTooltip
+          .classed('visible', false)
+          .style('opacity', 0);
+      })
+      .on('click', function(event, d) {
+        // Clicking a bar recenters the globe on that country and stops the spin
+        globeSpinLocked = true;
+        if (typeof stopGlobeRotation === 'function') {
+          stopGlobeRotation();
+        }
+        if (typeof focusCountryOnGlobe === 'function') {
+          focusCountryOnGlobe(d.country);
+        }
+      });
+
+    // SORT BUTTON FUNCTIONALITY
+    let currentSortMode = 'gap'; // Track current sort mode
     
-    svg.append('text').attr('transform', 'rotate(-90)')
-      .attr('x', -height / 2).attr('y', -55)
-      .style('text-anchor', 'middle').style('fill', '#E7E9EA')
-      .style('font-size', '13px').style('font-weight', '700')
-      .text('Concerned about AI growth (%)');
+    const sortButtons = document.querySelectorAll('.sort-btn');
+    sortButtons.forEach(button => {
+      button.addEventListener('click', function() {
+        // Update active button
+        sortButtons.forEach(btn => btn.classList.remove('active'));
+        this.classList.add('active');
+
+        const sortType = this.getAttribute('data-sort');
+        currentSortMode = sortType;
+        let sortedData;
+
+        switch(sortType) {
+          case 'gap':
+            sortedData = [...dataArray].sort((a, b) => b.gap - a.gap);
+            break;
+          case 'nervous':
+            sortedData = [...dataArray].sort((a, b) => b.nervous - a.nervous);
+            break;
+          case 'excited':
+            sortedData = [...dataArray].sort((a, b) => b.excited - a.excited);
+            break;
+          case 'country':
+            sortedData = [...dataArray].sort((a, b) => a.country.localeCompare(b.country));
+            break;
+          default:
+            sortedData = dataArray;
+        }
+
+        // Update yScale domain with new order
+        yScale.domain(sortedData.map(d => d.country));
+
+        // Update xScale based on sort mode
+        let maxValue;
+        if (sortType === 'nervous') {
+          maxValue = d3.max(sortedData, d => d.nervous);
+          xScale.domain([0, maxValue]).nice();
+        } else if (sortType === 'excited') {
+          maxValue = d3.max(sortedData, d => d.excited);
+          xScale.domain([0, maxValue]).nice();
+        } else if (sortType === 'country') {
+          maxValue = Math.max(d3.max(sortedData, d => d.nervous), d3.max(sortedData, d => d.excited));
+          xScale.domain([0, maxValue]).nice();
+        } else {
+          // gap mode
+          const maxAbsGap = d3.max(sortedData, d => Math.abs(d.gap)) || 0;
+          xScale.domain([-maxAbsGap, maxAbsGap]).nice();
+        }
+
+        // Update zero line position
+        svg.select('.gap-zero-line')
+          .transition()
+          .duration(750)
+          .attr('x1', xScale(0))
+          .attr('x2', xScale(0));
+
+        // Update grid
+        svg.select('.gap-x-grid')
+          .transition()
+          .duration(750)
+          .call(
+            d3.axisTop(xScale)
+              .ticks(7)
+              .tickSize(-height)
+              .tickFormat(d => {
+                if (sortType === 'gap') {
+                  return d === 0 ? '' : (d > 0 ? '+' + d.toFixed(0) : d.toFixed(0));
+                } else {
+                  return d.toFixed(0) + '%';
+                }
+              })
+          );
+
+        svg.selectAll('.gap-x-grid .domain').remove();
+        svg.selectAll('.gap-x-grid line')
+          .style('stroke', 'rgba(231,233,234,0.15)')
+          .style('stroke-dasharray', '3,6');
+
+        // Determine bar color scale based on sort mode
+        let getBarColor;
+        if (sortType === 'nervous') {
+          getBarColor = d => nervousColorScale(d.nervous);
+        } else if (sortType === 'excited') {
+          const excitedColorScale = d3.scaleSequential()
+            .domain([60, 25])
+            .interpolator(d3.interpolateRgb('#4AADFF', '#FF4444'));
+          getBarColor = d => excitedColorScale(d.excited);
+        } else if (sortType === 'country') {
+          getBarColor = d => nervousColorScale(d.nervous);
+        } else {
+          getBarColor = d => nervousColorScale(d.nervous);
+        }
+
+        // Rebind data and transition bars
+        svg.selectAll('.gap-bar')
+          .data(sortedData, d => d.country)
+          .transition()
+          .duration(750)
+          .attr('y', d => yScale(d.country))
+          .attr('x', d => {
+            if (sortType === 'gap') {
+              return xScale(Math.min(0, d.gap));
+            } else {
+              return xScale(0);
+            }
+          })
+          .attr('width', d => {
+            if (sortType === 'nervous') {
+              return xScale(d.nervous) - xScale(0);
+            } else if (sortType === 'excited') {
+              return xScale(d.excited) - xScale(0);
+            } else if (sortType === 'country') {
+              return xScale(d.nervous) - xScale(0);
+            } else {
+              return Math.abs(xScale(d.gap) - xScale(0));
+            }
+          })
+          .style('fill', getBarColor);
+
+        // Rebind data and transition labels
+        svg.selectAll('.gap-label')
+          .data(sortedData, d => d.country)
+          .transition()
+          .duration(750)
+          .attr('y', d => yScale(d.country) + yScale.bandwidth() / 2 + 4)
+          .attr('x', d => {
+            if (sortType === 'nervous') {
+              return xScale(d.nervous) + 8;
+            } else if (sortType === 'excited') {
+              return xScale(d.excited) + 8;
+            } else if (sortType === 'country') {
+              return xScale(d.nervous) + 8;
+            } else {
+              return d.gap >= 0 ? xScale(d.gap) + 8 : xScale(d.gap) - 8;
+            }
+          })
+          .attr('text-anchor', d => {
+            if (sortType === 'gap' && d.gap < 0) {
+              return 'end';
+            } else {
+              return 'start';
+            }
+          })
+          .text(d => {
+            if (sortType === 'nervous') {
+              return `${d.nervous.toFixed(1)}%`;
+            } else if (sortType === 'excited') {
+              return `${d.excited.toFixed(1)}%`;
+            } else if (sortType === 'country') {
+              return `${d.nervous.toFixed(1)}%`;
+            } else {
+              return `${d.gap >= 0 ? '+' : ''}${d.gap.toFixed(1)} pts`;
+            }
+          });
+
+        // Update y-axis with new order
+        svg.select('.gap-y-axis')
+          .transition()
+          .duration(750)
+          .call(d3.axisLeft(yScale));
+
+        svg.selectAll('.gap-y-axis .domain, .gap-y-axis line').remove();
+        svg.selectAll('.gap-y-axis text')
+          .style('fill', '#E7E9EA')
+          .style('font-size', '14px')
+          .style('font-weight', '600')
+          .style('cursor', 'pointer');
+
+        // Update axis title
+        svg.select('.axis-title')
+          .transition()
+          .duration(750)
+          .text(() => {
+            if (sortType === 'nervous') {
+              return 'Percentage of people nervous about AI';
+            } else if (sortType === 'excited') {
+              return 'Percentage of people excited about AI';
+            } else if (sortType === 'country') {
+              return 'Percentage of people nervous about AI';
+            } else {
+              return 'Sentiment gap (Nervous − Excited, percentage points)';
+            }
+          });
+
+        // Update top labels
+        svg.selectAll('.axis-label-left, .axis-label-right').remove();
+        
+        if (sortType === 'gap') {
+          svg.append('text')
+            .attr('class', 'axis-label-left')
+            .attr('x', xScale(-maxAbsGap))
+            .attr('y', -18)
+            .attr('text-anchor', 'start')
+            .style('fill', '#4AADFF')
+            .style('font-size', '12px')
+            .style('font-weight', '600')
+            .style('opacity', 0)
+            .text('More excited about AI')
+            .transition()
+            .duration(750)
+            .style('opacity', 1);
+
+          svg.append('text')
+            .attr('class', 'axis-label-right')
+            .attr('x', xScale(maxAbsGap))
+            .attr('y', -18)
+            .attr('text-anchor', 'end')
+            .style('fill', '#FF6B6B')
+            .style('font-size', '12px')
+            .style('font-weight', '600')
+            .style('opacity', 0)
+            .text('More nervous about AI')
+            .transition()
+            .duration(750)
+            .style('opacity', 1);
+        } else if (sortType === 'excited') {
+          svg.append('text')
+            .attr('class', 'axis-label-right')
+            .attr('x', xScale(maxValue))
+            .attr('y', -18)
+            .attr('text-anchor', 'end')
+            .style('fill', '#4AADFF')
+            .style('font-size', '12px')
+            .style('font-weight', '600')
+            .style('opacity', 0)
+            .text('More excited about AI')
+            .transition()
+            .duration(750)
+            .style('opacity', 1);
+        } else if (sortType === 'nervous' || sortType === 'country') {
+          svg.append('text')
+            .attr('class', 'axis-label-right')
+            .attr('x', xScale(maxValue || d3.max(sortedData, d => d.nervous)))
+            .attr('y', -18)
+            .attr('text-anchor', 'end')
+            .style('fill', '#FF6B6B')
+            .style('font-size', '12px')
+            .style('font-weight', '600')
+            .style('opacity', 0)
+            .text('More nervous about AI')
+            .transition()
+            .duration(750)
+            .style('opacity', 1);
+        }
+
+        // Update globe colors to match sort mode
+        if (typeof countryPaths !== 'undefined' && countryPaths) {
+          countryPaths
+            .transition()
+            .duration(750)
+            .attr('fill', d => {
+              const data = sentimentData[normalizeCountryName(d.properties.name)];
+              if (!data) return '#2d3748';
+              
+              if (sortType === 'excited') {
+                const excitedColorScale = d3.scaleSequential()
+                  .domain([60, 25])
+                  .interpolator(d3.interpolateRgb('#4AADFF', '#FF4444'));
+                return excitedColorScale(data.excited);
+              } else {
+                return nervousColorScale(data.nervous);
+              }
+            });
+        }
+
+        // Update color legend
+        const legendExcited = document.querySelector('.legend-end.excited-end');
+        const legendConcerned = document.querySelector('.legend-end.concerned-end');
+        
+        if (sortType === 'excited') {
+          if (legendExcited) legendExcited.textContent = 'Less Excited';
+          if (legendConcerned) legendConcerned.textContent = 'More Excited';
+        } else if (sortType === 'nervous' || sortType === 'country') {
+          if (legendExcited) legendExcited.textContent = 'Less Concerned';
+          if (legendConcerned) legendConcerned.textContent = 'More Concerned';
+        } else {
+          // gap mode
+          if (legendExcited) legendExcited.textContent = 'More Excited';
+          if (legendConcerned) legendConcerned.textContent = 'More Concerned';
+        }
+      });
+    });
   }
 
-  // ========================================
-  // WORLD MAP - EXTRA LARGE & INTERACTIVE
+  // GLOBE MAP - ROTATING ORTHOGRAPHIC VIEW
   // ========================================
   const mapContainer = document.getElementById('worldMap');
   if (!mapContainer) return;
 
-  const mapWidth = Math.min(1100, window.innerWidth * 0.85);
-  const mapHeight = 550;
-  const mapSvg = d3.select('#worldMap').append('svg')
-    .attr('width', mapWidth).attr('height', mapHeight)
+  const mapWidth = mapContainer.offsetWidth || 800;
+  const mapHeight = mapContainer.offsetHeight || 700;
+  const globeSvg = d3.select('#worldMap').append('svg')
+    .attr('width', '100%')
+    .attr('height', '100%')
     .attr('viewBox', `0 0 ${mapWidth} ${mapHeight}`)
+    .attr('preserveAspectRatio', 'xMidYMid meet')
     .style('background', '#000000');
 
-  const mapTooltip = d3.select('body').append('div').attr('class', 'map-tooltip')
-    .style('position', 'fixed').style('opacity', 0);
+  // Tooltip with vertical bar chart inside
+  const mapTooltip = d3.select('body')
+    .append('div')
+    .attr('class', 'map-tooltip')
+    .style('position', 'fixed')
+    .style('opacity', 0);
+  // Hide tooltip if the cursor leaves the map entirely
+  globeSvg.on('mouseleave', () => {
+    mapTooltip.classed('visible', false).style('opacity', 0);
+  });
+  const mapDom = document.getElementById('worldMap');
+  if (mapDom) {
+    mapDom.addEventListener('mouseleave', () => {
+      mapTooltip.classed('visible', false).style('opacity', 0);
+    });
+  }
 
-  const projection = d3.geoNaturalEarth1()
-    .scale(mapWidth / 4.5)
-    .translate([mapWidth / 2, mapHeight / 1.8]);
+  // Orthographic (3D-style) projection
+  const projection = d3.geoOrthographic()
+    .scale(mapHeight / 2.1)
+    .translate([mapWidth * 0.52, mapHeight * 0.5])
+    .clipAngle(90);
 
   const path = d3.geoPath().projection(projection);
-  const colorScale = d3.scaleSequential()
+  const graticule = d3.geoGraticule();
+
+  const globeGroup = globeSvg.append('g').attr('class', 'globe-group');
+
+  // Soft glow behind globe
+  const defs = globeSvg.append('defs');
+  const glow = defs.append('radialGradient')
+    .attr('id', 'globe-glow')
+    .attr('cx', '50%')
+    .attr('cy', '50%');
+  glow.append('stop').attr('offset', '0%').attr('stop-color', '#1f2933').attr('stop-opacity', 0.9);
+  glow.append('stop').attr('offset', '70%').attr('stop-color', '#020617').attr('stop-opacity', 1);
+  glow.append('stop').attr('offset', '100%').attr('stop-color', '#020617').attr('stop-opacity', 0);
+
+  globeGroup.append('circle')
+    .attr('cx', mapWidth * 0.52)
+    .attr('cy', mapHeight * 0.5)
+    .attr('r', mapHeight / 2.2)
+    .attr('fill', 'url(#globe-glow)');
+
+  const sphere = globeGroup.append('path')
+    .datum({ type: 'Sphere' })
+    .attr('class', 'globe-sphere')
+    .attr('fill', '#020617')
+    .attr('stroke', '#020617')
+    .attr('stroke-width', 1)
+    .attr('d', path);
+
+  const graticulePath = globeGroup.append('path')
+    .datum(graticule())
+    .attr('class', 'globe-graticule')
+    .attr('fill', 'none')
+    .attr('stroke', 'rgba(148,163,184,0.25)')
+    .attr('stroke-width', 0.5)
+    .attr('d', path);
+
+  // Color scale shared with main bar chart (more nervous = redder)
+  const nervousColorScale = d3.scaleSequential()
     .domain([25, 60])
     .interpolator(d3.interpolateRgb('#4AADFF', '#FF4444'));
 
-  // Map numeric 'nervous' values to human-friendly sentiment labels
-  // (keep colors as-is; only redefine the meaning shown on hover)
-  function getSentimentLabel(nervous) {
-    if (nervous == null || isNaN(nervous)) return 'No data';
-    // thresholds chosen to align with the visual blue->red continuum
-    if (nervous <= 30) return 'Excited';
-    if (nervous <= 45) return 'Balanced sentiment';
-    if (nervous <= 55) return 'Slightly nervous';
-    return 'Nervous';
+  let countryFeatures = [];
+  let countryPaths;
+
+  function redrawGlobe() {
+    if (!countryPaths) return;
+    sphere.attr('d', path);
+    graticulePath.attr('d', path(graticule()));
+    countryPaths.attr('d', path);
   }
 
-  // Add legend with even top/bottom internal padding
-  const legendWidth = 220;
-  const legendRightSpacing = 20; // spacing from right edge of SVG
-  const internalPadding = 14; // equal top and bottom padding inside legend
-  const titleFontSize = 16;
-  const labelFontSize = 14;
-  const barHeight = 15;
+  let globeTimer = null;
+  let globeSpinLocked = false; // set true when a user click should keep the globe paused
+  function startGlobeRotation() {
+    if (globeSpinLocked || globeTimer) return; // Already spinning or intentionally paused
+    globeTimer = d3.timer((elapsed) => {
+      const rotation = projection.rotate();
+      // slow, steady spin ~ one full rotation per 35–40 seconds
+      const lambda = rotation[0] + 0.25; // Increased from 0.01 for more visible rotation
+      projection.rotate([lambda, rotation[1], rotation[2]]);
+      redrawGlobe();
+    });
+  }
 
-  // positions calculated so top and bottom padding are equal
-  const titleY = internalPadding + titleFontSize; // baseline for title
-  const barY = titleY + 8; // gap between title and bar
-  const labelY = barY + barHeight + (labelFontSize + 4); // baseline for labels
+  function stopGlobeRotationFn() {
+    if (globeTimer) {
+      globeTimer.stop();
+      globeTimer = null;
+    }
+  }
 
-  const legendHeight = labelY + internalPadding; // bottom padding equals top padding
-  const legendX = mapWidth - legendWidth - legendRightSpacing;
-  const legendY = mapHeight - legendHeight - 20; // keep a little extra spacing from SVG bottom
+  // Load world geometry and draw globe
+  d3.json('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json').then(world => {
+    countryFeatures = topojson.feature(world, world.objects.countries).features;
 
-  const legend = mapSvg.append('g')
-    .attr('class', 'map-legend')
-    .attr('transform', `translate(${legendX}, ${legendY})`);
-
-  legend.append('rect')
-    .attr('width', legendWidth).attr('height', legendHeight)
-    .attr('fill', 'rgba(22, 24, 28, 0.95)')
-    .attr('stroke', 'rgba(29, 155, 240, 0.3)')
-    .attr('stroke-width', 2)
-    .attr('rx', 8);
-
-  legend.append('text')
-    .attr('x', 15).attr('y', titleY)
-    .style('fill', '#E7E9EA').style('font-size', `${titleFontSize}px`).style('font-weight', '700')
-    .text('Concern Level');
-
-  const gradient = legend.append('defs').append('linearGradient')
-    .attr('id', 'legend-gradient').attr('x1', '0%').attr('x2', '100%');
-  gradient.append('stop').attr('offset', '0%').attr('stop-color', '#4AADFF');
-  gradient.append('stop').attr('offset', '100%').attr('stop-color', '#FF4444');
-
-  // gradient bar
-  const barX = 15;
-  const barWidth = legendWidth - barX * 2;
-  legend.append('rect')
-    .attr('x', barX).attr('y', barY).attr('width', barWidth).attr('height', barHeight)
-    .attr('fill', 'url(#legend-gradient)').attr('rx', 3);
-
-  // labels
-  legend.append('text').attr('x', barX).attr('y', labelY)
-    .style('fill', '#71767B').style('font-size', `${labelFontSize}px`).text('Excited');
-  legend.append('text').attr('x', barX + barWidth).attr('y', labelY)
-    .style('fill', '#71767B').style('font-size', `${labelFontSize}px`).attr('text-anchor', 'end').text('Nervous');
-
-  try {
-    const world = await d3.json('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json');
-    const countries = topojson.feature(world, world.objects.countries);
-
-    mapSvg.selectAll('.country').data(countries.features).enter().append('path')
-      .attr('class', d => sentimentData[normalizeCountryName(d.properties.name)] ? 'country has-data' : 'country')
+    countryPaths = globeGroup.append('g')
+      .attr('class', 'countries')
+      .selectAll('path')
+      .data(countryFeatures)
+      .enter()
+      .append('path')
       .attr('d', path)
       .attr('fill', d => {
         const data = sentimentData[normalizeCountryName(d.properties.name)];
-        return data ? colorScale(data.nervous) : '#1a1a1a';
+        return data ? nervousColorScale(data.nervous) : '#2d3748';
       })
-      .style('opacity', 0)
-      .transition().duration(1000).delay((d, i) => i * 2).style('opacity', 1)
-      .selection()
+      .attr('stroke', '#020617')
+      .attr('stroke-width', 0.4)
+      .style('opacity', d => sentimentData[normalizeCountryName(d.properties.name)] ? 0.96 : 0.4)
+      .style('pointer-events', d => sentimentData[normalizeCountryName(d.properties.name)] ? 'auto' : 'none');
+
+    // Hover tooltip with tiny vertical bar chart
+    countryPaths
       .on('mouseover', function(event, d) {
         const data = sentimentData[normalizeCountryName(d.properties.name)];
-        if (data) {
-          d3.select(this).transition().duration(200).style('opacity', 1);
-          
-          mapTooltip.html(`
+        if (!data) return;
+
+        d3.select(this)
+          .raise()
+          .transition()
+          .duration(150)
+          .attr('stroke-width', 0.9)
+          .style('opacity', 1);
+
+        const maxBarHeight = 70;
+        const excitedHeight = (data.excited / 100) * maxBarHeight;
+        const nervousHeight = (data.nervous / 100) * maxBarHeight;
+
+        const excitedCount = Math.round(data.count * data.excited / 100);
+        const nervousCount = Math.round(data.count * data.nervous / 100);
+
+        mapTooltip
+          .html(`
             <div class="country-name">${d.properties.name}</div>
-            <div class="sentiment-values">
-              <strong>Nervous:</strong> ${data.nervous.toFixed(1)}%<br/>
-              <strong>Excited:</strong> ${data.excited.toFixed(1)}%<br/>
-              <strong>Respondents:</strong> ${data.count.toLocaleString()}<br/>
-              <div style="margin-top:10px; padding-top:8px; border-top:2px solid rgba(29,155,240,0.3);">
-                <div style="background:${colorScale(data.nervous)}; height:8px; border-radius:4px; margin-top:4px;"></div>
-                <em style="color:#71767B; font-size:13px;">
-                  ${getSentimentLabel(data.nervous)}
-                </em>
+            <div class="tooltip-bars">
+              <div class="tooltip-bar-column">
+                <div class="tooltip-bar excited" style="height:${excitedHeight}px;"></div>
+                <div class="tooltip-bar-label">Excited</div>
+                <div class="tooltip-bar-value">${data.excited.toFixed(1)}%</div>
+                <div class="tooltip-bar-count">${excitedCount.toLocaleString()} people</div>
+              </div>
+              <div class="tooltip-bar-column">
+                <div class="tooltip-bar nervous" style="height:${nervousHeight}px;"></div>
+                <div class="tooltip-bar-label">Nervous</div>
+                <div class="tooltip-bar-value">${data.nervous.toFixed(1)}%</div>
+                <div class="tooltip-bar-count">${nervousCount.toLocaleString()} people</div>
               </div>
             </div>
           `)
-            .classed('visible', true)
-            .style('opacity', 1);
+          .classed('visible', true)
+          .style('opacity', 1);
 
-          // Position/map tooltip and clamp to viewport
-          positionTooltip(mapTooltip, event.pageX, event.pageY, 15, 28);
-        }
+        positionTooltip(mapTooltip, event.pageX, event.pageY, 15, 28);
       })
       .on('mousemove', function(event) {
         positionTooltip(mapTooltip, event.pageX, event.pageY, 15, 28);
       })
       .on('mouseout', function() {
         const data = sentimentData[normalizeCountryName(d3.select(this).datum().properties.name)];
-        if (data) {
-          d3.select(this).transition().duration(200).style('opacity', 0.9);
-        }
-  mapTooltip.style('opacity', 0).classed('visible', false);
-      })
-      .on('click', function(event, d) {
-        const data = sentimentData[normalizeCountryName(d.properties.name)];
-        if (data) {
-          // Pulse animation
-          d3.select(this)
-            .transition().duration(150).style('opacity', 1).attr('stroke-width', 4)
-            .transition().duration(150).attr('stroke-width', 1.2);
-        }
+        if (!data) return;
+        
+        d3.select(this)
+          .transition()
+          .duration(150)
+          .attr('stroke-width', 0.4)
+          .style('opacity', 0.96);
+
+        mapTooltip.classed('visible', false).style('opacity', 0);
       });
 
-  } catch (error) {
+    // Expose functions so the bar chart can control the globe
+    focusCountryOnGlobe = function(countryName) {
+      if (!countryFeatures.length) return;
+      const target = countryFeatures.find(f => normalizeCountryName(f.properties.name) === normalizeCountryName(countryName));
+      if (!target) return;
+
+      const centroid = d3.geoCentroid(target); // [lon, lat]
+      stopGlobeRotation();
+
+      // Reset all country strokes first
+      countryPaths.style('stroke-width', 0.4).style('stroke', '#020617');
+
+      // Find and highlight the target country path
+      const targetIndex = countryFeatures.findIndex(f => f === target);
+      if (targetIndex !== -1) {
+        d3.select(countryPaths.nodes()[targetIndex])
+          .style('stroke-width', 2)
+          .style('stroke', '#1D9BF0');
+      }
+
+      d3.transition()
+        .duration(1250)
+        .tween('rotate', () => {
+          const initialRotate = projection.rotate();
+          const targetRotate = [-centroid[0], -centroid[1], 0];
+          const r = d3.interpolate(initialRotate, targetRotate);
+          return t => {
+            projection.rotate(r(t));
+            redrawGlobe();
+          };
+        })
+        .on('end', () => {
+          if (!globeSpinLocked) startGlobeRotation();
+        });
+    };
+
+    stopGlobeRotation = stopGlobeRotationFn;
+
+    // Add drag behavior to rotate globe
+    const drag = d3.drag()
+      .on('start', function(event) {
+        globeSpinLocked = true;
+        stopGlobeRotation();
+        globeSvg.style('cursor', 'grabbing');
+      })
+      .on('drag', function(event) {
+        const rotation = projection.rotate();
+        const sensitivity = 0.5;
+        projection.rotate([
+          rotation[0] + event.dx * sensitivity,
+          rotation[1] - event.dy * sensitivity,
+          rotation[2]
+        ]);
+        redrawGlobe();
+      })
+      .on('end', function(event) {
+        globeSvg.style('cursor', 'grab');
+        // Resume rotation after 2 seconds of no interaction
+        setTimeout(() => {
+          globeSpinLocked = false;
+          startGlobeRotation();
+        }, 2000);
+      });
+
+    globeSvg.call(drag);
+
+    // Add click on countries to highlight them and show in bar chart
+    countryPaths.on('click', function(event, d) {
+      const countryName = normalizeCountryName(d.properties.name);
+      const data = sentimentData[countryName];
+      if (!data) return;
+
+      // Stop rotation and lock on this country
+      globeSpinLocked = true;
+      stopGlobeRotation();
+
+      // Highlight this country
+      countryPaths.style('stroke-width', 0.4);
+      d3.select(this)
+        .style('stroke-width', 2)
+        .style('stroke', '#1D9BF0');
+
+      // Pulse effect
+      d3.select(this)
+        .transition()
+        .duration(300)
+        .style('opacity', 1)
+        .transition()
+        .duration(300)
+        .style('opacity', 0.96);
+    });
+
+    // Keyboard shortcuts for globe interaction
+    document.addEventListener('keydown', (event) => {
+      const sentimentSection = document.getElementById('sectionSentiment');
+      if (!sentimentSection) return;
+      
+      // Only respond if sentiment section is in view
+      const rect = sentimentSection.getBoundingClientRect();
+      const inView = rect.top < window.innerHeight && rect.bottom > 0;
+      if (!inView) return;
+
+      const rotation = projection.rotate();
+      const step = 5;
+
+      switch(event.key) {
+        case 'ArrowLeft':
+          event.preventDefault();
+          globeSpinLocked = true;
+          stopGlobeRotation();
+          projection.rotate([rotation[0] - step, rotation[1], rotation[2]]);
+          redrawGlobe();
+          break;
+        case 'ArrowRight':
+          event.preventDefault();
+          globeSpinLocked = true;
+          stopGlobeRotation();
+          projection.rotate([rotation[0] + step, rotation[1], rotation[2]]);
+          redrawGlobe();
+          break;
+        case 'ArrowUp':
+          event.preventDefault();
+          globeSpinLocked = true;
+          stopGlobeRotation();
+          projection.rotate([rotation[0], Math.min(90, rotation[1] + step), rotation[2]]);
+          redrawGlobe();
+          break;
+        case 'ArrowDown':
+          event.preventDefault();
+          globeSpinLocked = true;
+          stopGlobeRotation();
+          projection.rotate([rotation[0], Math.max(-90, rotation[1] - step), rotation[2]]);
+          redrawGlobe();
+          break;
+        case 'r':
+        case 'R':
+          // Reset to default view and resume rotation
+          event.preventDefault();
+          globeSpinLocked = false;
+          d3.transition()
+            .duration(1000)
+            .tween('rotate', () => {
+              const initialRotate = projection.rotate();
+              const targetRotate = [0, 0, 0];
+              const r = d3.interpolate(initialRotate, targetRotate);
+              return t => {
+                projection.rotate(r(t));
+                redrawGlobe();
+              };
+            })
+            .on('end', () => {
+              startGlobeRotation();
+            });
+          break;
+      }
+    });
+
+    // Start slow spin and keep it tied to the sentiment section visibility
+    const sentimentSection = document.getElementById('sectionSentiment');
+    if (sentimentSection) {
+      const sectionObserver = new IntersectionObserver((entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            if (!globeSpinLocked) startGlobeRotation();
+          } else {
+            stopGlobeRotation();
+          }
+        });
+      }, { threshold: 0.25 });
+      sectionObserver.observe(sentimentSection);
+    } else {
+      startGlobeRotation();
+    }
+  }).catch((error) => {
     console.error('Error loading map data:', error);
-    mapContainer.innerHTML = '<p style="color: #E7E9EA; text-align: center; padding: 2rem; font-size:18px;">Map visualization could not be loaded. Please check your internet connection.</p>';
-  }
-});
+    mapContainer.innerHTML =
+      '<p style="color: #E7E9EA; text-align: center; padding: 2rem; font-size:18px;">' +
+      'Map visualization could not be loaded. Please check your internet connection.</p>';
+  });
+
+  // Add view toggle functionality
+  const viewButtons = document.querySelectorAll('.sentiment-control-btn');
+  const chartPanel = document.querySelector('.sentiment-gap-panel');
+  const globePanel = document.querySelector('.sentiment-globe-panel');
+
+  viewButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const view = btn.dataset.view;
+      
+      // Update active button
+      viewButtons.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      
+      // Toggle visibility with smooth transition
+      if (view === 'both') {
+        chartPanel.style.display = 'flex';
+        globePanel.style.display = 'flex';
+        document.querySelector('.sentiment-layout').style.gridTemplateColumns = '1fr 1fr';
+      } else if (view === 'chart') {
+        chartPanel.style.display = 'flex';
+        globePanel.style.display = 'none';
+        document.querySelector('.sentiment-layout').style.gridTemplateColumns = '1fr';
+      } else if (view === 'globe') {
+        chartPanel.style.display = 'none';
+        globePanel.style.display = 'flex';
+        document.querySelector('.sentiment-layout').style.gridTemplateColumns = '1fr';
+      }
+    });
+  });
 
 // ========================================
 // BOSTON ZOOM TRANSITION ANIMATION
@@ -4957,17 +5660,31 @@ document.addEventListener('DOMContentLoaded', async () => {
 })();
 
 // ========================================
-// CLICKABLE CARDS FUNCTIONALITY
+// CLICKABLE CARDS FUNCTIONALITY - MOVED TO END
 // ========================================
-document.addEventListener('DOMContentLoaded', function() {
+function initializeClickableCards() {
+  console.log('🎯 Initializing clickable cards...');
+  
   // Find all clickable cards in the conclusion section
   const clickableCards = document.querySelectorAll('.clickable-card');
+  console.log('🔍 Found clickable cards:', clickableCards.length);
   
-  clickableCards.forEach(card => {
+  if (clickableCards.length === 0) {
+    console.warn('⚠️ No clickable cards found! Retrying in 1 second...');
+    setTimeout(initializeClickableCards, 1000);
+    return;
+  }
+  
+  clickableCards.forEach((card, index) => {
+    console.log(`🎨 Setting up card ${index}:`, card);
+    
     const expandedContent = card.querySelector('.card-expanded-content');
     const cardHint = card.querySelector('.card-hint');
     
-    if (expandedContent) {
+    console.log('📄 Expanded content:', expandedContent);
+    console.log('💡 Card hint:', cardHint);
+    
+    if (expandedContent && cardHint) {
       // Initially hide expanded content
       expandedContent.style.display = 'none';
       expandedContent.style.maxHeight = '0';
@@ -4979,9 +5696,12 @@ document.addEventListener('DOMContentLoaded', function() {
       
       // Add click event listener
       card.addEventListener('click', function(e) {
+        console.log('🖱️ Card clicked!', card);
         e.preventDefault();
+        e.stopPropagation();
         
         if (!isExpanded) {
+          console.log('📈 Expanding card...');
           // Expand the card
           expandedContent.style.display = 'block';
           expandedContent.style.maxHeight = expandedContent.scrollHeight + 'px';
@@ -4989,24 +5709,21 @@ document.addEventListener('DOMContentLoaded', function() {
           expandedContent.style.marginTop = '1rem';
           
           // Update hint text
-          if (cardHint) {
-            cardHint.textContent = 'Click to collapse';
-          }
+          cardHint.textContent = 'Click to collapse';
           
           // Add expanded class for additional styling
           card.classList.add('expanded');
           
         } else {
+          console.log('📉 Collapsing card...');
           // Collapse the card
           expandedContent.style.maxHeight = '0';
           expandedContent.style.opacity = '0';
           expandedContent.style.marginTop = '0';
           
           // Update hint text
-          if (cardHint) {
-            const isDetailsCard = card.querySelector('.answer-verdict');
-            cardHint.textContent = isDetailsCard ? 'Click for details' : 'Click for tips';
-          }
+          const isDetailsCard = card.querySelector('.answer-verdict');
+          cardHint.textContent = isDetailsCard ? 'Click for details' : 'Click for tips';
           
           // Remove expanded class
           card.classList.remove('expanded');
@@ -5026,98 +5743,53 @@ document.addEventListener('DOMContentLoaded', function() {
       card.addEventListener('mouseenter', function() {
         card.style.transform = 'translateY(-2px)';
         card.style.cursor = 'pointer';
+        console.log('🎯 Card hover enter');
       });
       
       card.addEventListener('mouseleave', function() {
         if (!card.classList.contains('expanded')) {
           card.style.transform = 'translateY(0)';
         }
+        console.log('🎯 Card hover leave');
       });
+      
+      console.log('✅ Card setup complete for card', index);
+    } else {
+      console.log('❌ Missing elements for card:', card);
+      console.log('  - expandedContent:', expandedContent);
+      console.log('  - cardHint:', cardHint);
     }
   });
   
-  // Also handle the message content card (The Takeaway)
-  const messageContent = document.querySelector('.conclusion-message');
-  if (messageContent && !messageContent.classList.contains('clickable-card')) {
-    messageContent.classList.add('clickable-card');
-    
-    const expandedContent = messageContent.querySelector('.card-expanded-content');
-    const cardHint = messageContent.querySelector('.card-hint');
-    
-    if (expandedContent) {
-      // Initially hide expanded content
-      expandedContent.style.display = 'none';
-      expandedContent.style.maxHeight = '0';
-      expandedContent.style.opacity = '0';
-      expandedContent.style.overflow = 'hidden';
-      expandedContent.style.transition = 'all 0.3s ease-in-out';
-      
-      let isExpanded = false;
-      
-      // Add click event listener
-      messageContent.addEventListener('click', function(e) {
-        e.preventDefault();
-        
-        if (!isExpanded) {
-          // Expand the card
-          expandedContent.style.display = 'block';
-          expandedContent.style.maxHeight = expandedContent.scrollHeight + 'px';
-          expandedContent.style.opacity = '1';
-          expandedContent.style.marginTop = '1rem';
-          
-          // Update hint text
-          if (cardHint) {
-            cardHint.textContent = 'Click to collapse';
-          }
-          
-          // Add expanded class for additional styling
-          messageContent.classList.add('expanded');
-          
-        } else {
-          // Collapse the card
-          expandedContent.style.maxHeight = '0';
-          expandedContent.style.opacity = '0';
-          expandedContent.style.marginTop = '0';
-          
-          // Update hint text
-          if (cardHint) {
-            cardHint.textContent = 'Click for tips';
-          }
-          
-          // Remove expanded class
-          messageContent.classList.remove('expanded');
-          
-          // Hide after animation completes
-          setTimeout(() => {
-            if (!isExpanded) {
-              expandedContent.style.display = 'none';
-            }
-          }, 300);
-        }
-        
-        isExpanded = !isExpanded;
-      });
-      
-      // Add hover effects
-      messageContent.addEventListener('mouseenter', function() {
-        messageContent.style.transform = 'translateY(-2px)';
-        messageContent.style.cursor = 'pointer';
-      });
-      
-      messageContent.addEventListener('mouseleave', function() {
-        if (!messageContent.classList.contains('expanded')) {
-          messageContent.style.transform = 'translateY(0)';
-        }
-      });
-    }
-  }
-});
+  console.log('🎉 Clickable cards initialization complete!');
+}
+
+// Initialize when DOM is ready
+document.addEventListener('DOMContentLoaded', initializeClickableCards);
+
+// Also initialize after a delay in case DOM loading is delayed
+setTimeout(initializeClickableCards, 2000);
 
 
 const botCanvas = document.getElementById('botFlowCanvas');
 const botCtx = botCanvas.getContext('2d');
 
-// Data - you can load this from data.json if you want
+// Active filters
+let botActiveCategory = null;
+let botActiveValue = null;
+
+let botAnimationProgress = 0;
+let botIsAnimating = false;
+
+// Category options
+const categoryOptions = {
+  origin: ['Data Center', 'Residential Proxy', 'Mobile ISP'],
+  sophistication: ['Simple', 'Moderate', 'Advanced'],
+  industry: ['Retail', 'Travel', 'Financial', 'Business', 'Computing'],
+  country: ['United States', 'Netherlands', 'Australia']
+};
+
+// Data
 const botData = {
   stages: [
     {
@@ -5156,7 +5828,6 @@ const botData = {
     }
   ],
   flows: [
-    // Origin to Sophistication
     { from: [0, 0], to: [1, 0], value: 20, color: '#ef4444' },
     { from: [0, 0], to: [1, 1], value: 8, color: '#ef4444' },
     { from: [0, 0], to: [1, 2], value: 28, color: '#ef4444' },
@@ -5167,7 +5838,6 @@ const botData = {
     { from: [0, 2], to: [1, 1], value: 3, color: '#b91c1c' },
     { from: [0, 2], to: [1, 2], value: 10, color: '#b91c1c' },
     
-    // Sophistication to Industry
     { from: [1, 0], to: [2, 0], value: 15, color: '#fbbf24' },
     { from: [1, 0], to: [2, 1], value: 10, color: '#fbbf24' },
     { from: [1, 0], to: [2, 4], value: 8, color: '#fbbf24' },
@@ -5178,7 +5848,6 @@ const botData = {
     { from: [1, 1], to: [2, 1], value: 3, color: '#f59e0b' },
     { from: [1, 1], to: [2, 3], value: 3, color: '#f59e0b' },
     
-    // Industry to Country
     { from: [2, 0], to: [3, 0], value: 18, color: '#60a5fa' },
     { from: [2, 0], to: [3, 1], value: 3, color: '#60a5fa' },
     { from: [2, 0], to: [3, 2], value: 3, color: '#60a5fa' },
@@ -5197,10 +5866,10 @@ const botWidth = botCanvas.width;
 const botHeight = botCanvas.height;
 const botStageWidth = botWidth / 4;
 const botNodeWidth = 100;
-const botPadding = 60;
-const botBottomPadding = 100;
+const botPadding = 35;
+const botBottomPadding = 70;
 
-// Calculate positions with better spacing
+// Calculate positions
 const botPositions = botData.stages.map((stage, stageIdx) => {
   const x = stageIdx * botStageWidth + botStageWidth / 2;
   const totalHeight = stage.nodes.reduce((sum, n) => sum + n.value, 0) * 3.5;
@@ -5218,141 +5887,306 @@ const botPositions = botData.stages.map((stage, stageIdx) => {
   });
 });
 
-let botHoveredNode = null;
-
-// Find node at mouse position
-function getBotNodeAtPosition(x, y) {
-  for (let stageIdx = 0; stageIdx < botData.stages.length; stageIdx++) {
-    for (let nodeIdx = 0; nodeIdx < botData.stages[stageIdx].nodes.length; nodeIdx++) {
-      const pos = botPositions[stageIdx][nodeIdx];
-      if (x >= pos.x - botNodeWidth / 2 && x <= pos.x + botNodeWidth / 2 &&
-          y >= pos.y - pos.height / 2 && y <= pos.y + pos.height / 2) {
-        return [stageIdx, nodeIdx];
-      }
+// Find only DIRECT connections (not all reachable nodes)
+function findConnectedElements(stageIdx, nodeIdx) {
+  const connectedNodes = new Set();
+  const connectedFlows = new Set();
+  
+  // Add the selected node
+  connectedNodes.add(`${stageIdx}-${nodeIdx}`);
+  
+  // Find DIRECT flows FROM this node (one step forward)
+  botData.flows.forEach((flow, flowIdx) => {
+    if (flow.from[0] === stageIdx && flow.from[1] === nodeIdx) {
+      connectedFlows.add(flowIdx);
+      connectedNodes.add(`${flow.to[0]}-${flow.to[1]}`);
     }
-  }
-  return null;
+  });
+  
+  // Find DIRECT flows TO this node (one step backward)
+  botData.flows.forEach((flow, flowIdx) => {
+    if (flow.to[0] === stageIdx && flow.to[1] === nodeIdx) {
+      connectedFlows.add(flowIdx);
+      connectedNodes.add(`${flow.from[0]}-${flow.from[1]}`);
+    }
+  });
+  
+  // Now recursively add all forward paths
+  const nodesToProcess = Array.from(connectedNodes).filter(n => {
+    const [s, i] = n.split('-').map(Number);
+    return s > stageIdx; // Only process nodes ahead
+  });
+  
+  nodesToProcess.forEach(nodeKey => {
+    const [s, i] = nodeKey.split('-').map(Number);
+    
+    botData.flows.forEach((flow, flowIdx) => {
+      if (flow.from[0] === s && flow.from[1] === i) {
+        connectedFlows.add(flowIdx);
+        const targetKey = `${flow.to[0]}-${flow.to[1]}`;
+        if (!connectedNodes.has(targetKey)) {
+          connectedNodes.add(targetKey);
+          nodesToProcess.push(targetKey);
+        }
+      }
+    });
+  });
+  
+  // Recursively add all backward paths
+  const backwardNodes = Array.from(connectedNodes).filter(n => {
+    const [s, i] = n.split('-').map(Number);
+    return s < stageIdx; // Only process nodes behind
+  });
+  
+  backwardNodes.forEach(nodeKey => {
+    const [s, i] = nodeKey.split('-').map(Number);
+    
+    botData.flows.forEach((flow, flowIdx) => {
+      if (flow.to[0] === s && flow.to[1] === i) {
+        connectedFlows.add(flowIdx);
+        const sourceKey = `${flow.from[0]}-${flow.from[1]}`;
+        if (!connectedNodes.has(sourceKey)) {
+          connectedNodes.add(sourceKey);
+          backwardNodes.push(sourceKey);
+        }
+      }
+    });
+  });
+  
+  return { nodes: connectedNodes, flows: connectedFlows };
 }
 
-// Get flows connected to a node
-function getBotConnectedFlows(stageIdx, nodeIdx) {
-  return botData.flows.filter(flow => 
-    (flow.from[0] === stageIdx && flow.from[1] === nodeIdx) ||
-    (flow.to[0] === stageIdx && flow.to[1] === nodeIdx)
-  );
+// Get filtered elements based on current selection
+function getFilteredElements() {
+  if (!botActiveCategory || !botActiveValue) {
+    return null; // No filters active
+  }
+  
+  let filteredNodes = new Set();
+  let filteredFlows = new Set();
+  
+  // Map category to stage index
+  const stageMap = {
+    origin: 0,
+    sophistication: 1,
+    industry: 2,
+    country: 3
+  };
+  
+  const stageIdx = stageMap[botActiveCategory];
+  
+  // Find the matching node
+  botData.stages[stageIdx].nodes.forEach((node, nodeIdx) => {
+    if (node.name === botActiveValue) {
+      const connected = findConnectedElements(stageIdx, nodeIdx);
+      connected.nodes.forEach(n => filteredNodes.add(n));
+      connected.flows.forEach(f => filteredFlows.add(f));
+    }
+  });
+  
+  console.log('Filter:', botActiveCategory, '=', botActiveValue);
+  console.log('Connected nodes:', filteredNodes.size);
+  console.log('Connected flows:', filteredFlows.size);
+  
+  return { nodes: filteredNodes, flows: filteredFlows };
+}
+
+// Animate transition
+function animateTransition(callback) {
+  if (botIsAnimating) return;
+  
+  botIsAnimating = true;
+  const startTime = performance.now();
+  const duration = 1000;
+  
+  function animate(currentTime) {
+    const elapsed = currentTime - startTime;
+    const progress = Math.min(elapsed / duration, 1);
+    
+    // Ease-in-out
+    botAnimationProgress = progress < 0.5
+      ? 2 * progress * progress
+      : 1 - Math.pow(-2 * progress + 2, 2) / 2;
+    
+    drawBotVisualization();
+    
+    if (progress < 1) {
+      requestAnimationFrame(animate);
+    } else {
+      botIsAnimating = false;
+      botAnimationProgress = 1;
+      if (callback) callback();
+    }
+  }
+  
+  requestAnimationFrame(animate);
 }
 
 function drawBotVisualization() {
   botCtx.clearRect(0, 0, botWidth, botHeight);
   
-  const connectedFlows = botHoveredNode ? getBotConnectedFlows(botHoveredNode[0], botHoveredNode[1]) : [];
+  const filtered = getFilteredElements();
+  const hasFilters = filtered !== null;
   
   // Draw flows
-  botData.flows.forEach(flow => {
-    const isConnected = connectedFlows.includes(flow);
+  botData.flows.forEach((flow, flowIdx) => {
     const fromPos = botPositions[flow.from[0]][flow.from[1]];
     const toPos = botPositions[flow.to[0]][flow.to[1]];
-    
     const thickness = Math.max(2, flow.value / 1.5);
     
-    botCtx.strokeStyle = flow.color;
-    botCtx.lineWidth = thickness;
-    botCtx.globalAlpha = isConnected ? 0.8 : 0.25;
+    let opacity = 0.25;
+    let shouldShow = true;
     
-    botCtx.beginPath();
-    botCtx.moveTo(fromPos.x + botNodeWidth / 2, fromPos.y);
+    if (hasFilters) {
+      if (filtered.flows.has(flowIdx)) {
+        opacity = 0.7;
+      } else {
+        opacity = 0.05;
+        shouldShow = botAnimationProgress < 0.5; // Fade out in first half
+      }
+    }
     
-    const cpX1 = fromPos.x + botStageWidth / 2;
-    const cpX2 = toPos.x - botStageWidth / 2;
-    
-    botCtx.bezierCurveTo(
-      cpX1, fromPos.y,
-      cpX2, toPos.y,
-      toPos.x - botNodeWidth / 2, toPos.y
-    );
-    botCtx.stroke();
+    if (shouldShow) {
+      botCtx.strokeStyle = flow.color;
+      botCtx.lineWidth = thickness;
+      botCtx.globalAlpha = opacity * (shouldShow ? 1 : (1 - (botAnimationProgress - 0.5) * 2));
+      
+      botCtx.beginPath();
+      botCtx.moveTo(fromPos.x + botNodeWidth / 2, fromPos.y);
+      
+      const cpX1 = fromPos.x + botStageWidth / 2;
+      const cpX2 = toPos.x - botStageWidth / 2;
+      
+      botCtx.bezierCurveTo(
+        cpX1, fromPos.y,
+        cpX2, toPos.y,
+        toPos.x - botNodeWidth / 2, toPos.y
+      );
+      botCtx.stroke();
+    }
   });
   
   botCtx.globalAlpha = 1;
   
-  // Draw nodes and stage titles
+  // Draw nodes
   botData.stages.forEach((stage, stageIdx) => {
     // Draw stage title
     botCtx.fillStyle = '#9ca3af';
     botCtx.font = 'bold 14px sans-serif';
     botCtx.textAlign = 'center';
-    botCtx.fillText(stage.name.toUpperCase(), stageIdx * botStageWidth + botStageWidth / 2, 40);
+    botCtx.fillText(stage.name.toUpperCase(), stageIdx * botStageWidth + botStageWidth / 2, 10);
     
     stage.nodes.forEach((node, nodeIdx) => {
       const pos = botPositions[stageIdx][nodeIdx];
-      const isHovered = botHoveredNode && botHoveredNode[0] === stageIdx && botHoveredNode[1] === nodeIdx;
+      const nodeKey = `${stageIdx}-${nodeIdx}`;
       
-      // Draw node rectangle
-      botCtx.fillStyle = node.color;
-      if (isHovered) {
-        botCtx.shadowColor = node.color;
-        botCtx.shadowBlur = 20;
+      let opacity = 1;
+      let scale = 1;
+      let shouldShow = true;
+      
+      if (hasFilters) {
+        if (filtered.nodes.has(nodeKey)) {
+          opacity = 1;
+          scale = 1 + (botAnimationProgress * 0.15); // Grow slightly
+        } else {
+          opacity = 0.1;
+          scale = 1 - (botAnimationProgress * 0.3); // Shrink
+          shouldShow = botAnimationProgress < 0.7; // Disappear in first 70%
+        }
       }
-      botCtx.fillRect(pos.x - botNodeWidth / 2, pos.y - pos.height / 2, botNodeWidth, pos.height);
-      botCtx.shadowBlur = 0;
       
-      // Draw border
-      botCtx.strokeStyle = isHovered ? '#ffffff' : '#000';
-      botCtx.lineWidth = isHovered ? 3 : 2;
-      botCtx.strokeRect(pos.x - botNodeWidth / 2, pos.y - pos.height / 2, botNodeWidth, pos.height);
-      
-      // Draw node name
-      botCtx.fillStyle = '#ffffff';
-      botCtx.font = 'bold 11px sans-serif';
-      botCtx.textAlign = 'center';
-      botCtx.shadowColor = 'rgba(0, 0, 0, 0.8)';
-      botCtx.shadowBlur = 4;
-      
-      const words = node.name.split(' ');
-      words.forEach((word, i) => {
-        botCtx.fillText(word, pos.x, pos.y - (words.length - 1) * 6 + i * 14);
-      });
-      
-      botCtx.shadowBlur = 0;
+      if (shouldShow && scale > 0) {
+        const adjustedOpacity = opacity * (shouldShow ? 1 : (1 - (botAnimationProgress - 0.7) / 0.3));
+        
+        botCtx.save();
+        botCtx.translate(pos.x, pos.y);
+        botCtx.scale(scale, scale);
+        botCtx.translate(-pos.x, -pos.y);
+        
+        // Draw node rectangle
+        botCtx.globalAlpha = adjustedOpacity;
+        botCtx.fillStyle = node.color;
+        botCtx.fillRect(pos.x - botNodeWidth / 2, pos.y - pos.height / 2, botNodeWidth, pos.height);
+        
+        // Draw border
+        botCtx.strokeStyle = filtered && filtered.nodes.has(nodeKey) ? '#ffffff' : '#000';
+        botCtx.lineWidth = filtered && filtered.nodes.has(nodeKey) ? 3 : 2;
+        botCtx.strokeRect(pos.x - botNodeWidth / 2, pos.y - pos.height / 2, botNodeWidth, pos.height);
+        
+        // Draw node name
+        botCtx.fillStyle = '#ffffff';
+        botCtx.font = 'bold 11px sans-serif';
+        botCtx.textAlign = 'center';
+        botCtx.shadowColor = 'rgba(0, 0, 0, 0.8)';
+        botCtx.shadowBlur = 4;
+        
+        const words = node.name.split(' ');
+        words.forEach((word, i) => {
+          botCtx.fillText(word, pos.x, pos.y - (words.length - 1) * 6 + i * 14);
+        });
+        
+        botCtx.shadowBlur = 0;
+        
+        botCtx.restore();
+      }
     });
   });
   
-  // Draw all numbers on top (separate pass to avoid being covered by other nodes)
-  botData.stages.forEach((stage, stageIdx) => {
-    stage.nodes.forEach((node, nodeIdx) => {
-      const pos = botPositions[stageIdx][nodeIdx];
-      
-      botCtx.font = 'bold 15px sans-serif';
-      botCtx.fillStyle = '#60a5fa';
-      botCtx.textAlign = 'center';
-      botCtx.fillText(node.value, pos.x, pos.y + pos.height / 2 + 16);
-    });
-  });
+  botCtx.globalAlpha = 1;
 }
 
-// Mouse interaction
-botCanvas.addEventListener('mousemove', (e) => {
-  const rect = botCanvas.getBoundingClientRect();
-  const scaleX = botCanvas.width / rect.width;
-  const scaleY = botCanvas.height / rect.height;
-  const x = (e.clientX - rect.left) * scaleX;
-  const y = (e.clientY - rect.top) * scaleY;
+// Event listeners for filters
+const categorySelect = document.getElementById('botCategorySelect');
+const valueSelectGroup = document.getElementById('botValueSelectGroup');
+const valueSelect = document.getElementById('botValueSelect');
+const valueLabel = document.getElementById('botValueLabel');
+
+categorySelect.addEventListener('change', (e) => {
+  const category = e.target.value;
   
-  const newHoveredNode = getBotNodeAtPosition(x, y);
-  if (JSON.stringify(newHoveredNode) !== JSON.stringify(botHoveredNode)) {
-    botHoveredNode = newHoveredNode;
-    drawBotVisualization();
+  if (category) {
+    // Show second dropdown
+    valueSelectGroup.style.display = 'flex';
+    valueLabel.textContent = `Step 2: Choose ${category.charAt(0).toUpperCase() + category.slice(1)}`;
+    
+    // Populate options
+    valueSelect.innerHTML = '<option value="">Select...</option>';
+    categoryOptions[category].forEach(option => {
+      const opt = document.createElement('option');
+      opt.value = option;
+      opt.textContent = option;
+      valueSelect.appendChild(opt);
+    });
+    
+    // Reset value selection
+    botActiveCategory = category;
+    botActiveValue = null;
+    valueSelect.value = '';
+  } else {
+    // Hide second dropdown
+    valueSelectGroup.style.display = 'none';
+    botActiveCategory = null;
+    botActiveValue = null;
+    animateTransition();
   }
 });
 
-botCanvas.addEventListener('mouseleave', () => {
-  if (botHoveredNode) {
-    botHoveredNode = null;
-    drawBotVisualization();
-  }
+valueSelect.addEventListener('change', (e) => {
+  botActiveValue = e.target.value || null;
+  animateTransition();
+});
+
+document.getElementById('botResetFilters').addEventListener('click', () => {
+  botActiveCategory = null;
+  botActiveValue = null;
+  categorySelect.value = '';
+  valueSelect.value = '';
+  valueSelectGroup.style.display = 'none';
+  animateTransition();
 });
 
 // Initial draw
+botAnimationProgress = 1;
 drawBotVisualization();
 console.log('✅ Bot visualization rendered successfully!');
 
@@ -6593,4 +7427,5 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     });
   }
-});
+
+});})
