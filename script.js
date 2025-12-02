@@ -1,6 +1,9 @@
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 =======
 <<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
 // Select dots and sections
 const dots = document.querySelectorAll('.dot');
@@ -8849,5 +8852,8 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   }
 });   
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
 >>>>>>> Stashed changes
