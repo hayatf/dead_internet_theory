@@ -5771,25 +5771,14 @@ document.addEventListener('DOMContentLoaded', initializeClickableCards);
 setTimeout(initializeClickableCards, 2000);
 
 
+// ========================================
+// BOT TRAFFIC FLOW DIAGRAM
+// ========================================
+
 const botCanvas = document.getElementById('botFlowCanvas');
 const botCtx = botCanvas.getContext('2d');
 
-// Active filters
-let botActiveCategory = null;
-let botActiveValue = null;
-
-let botAnimationProgress = 0;
-let botIsAnimating = false;
-
-// Category options
-const categoryOptions = {
-  origin: ['Data Center', 'Residential Proxy', 'Mobile ISP'],
-  sophistication: ['Simple', 'Moderate', 'Advanced'],
-  industry: ['Retail', 'Travel', 'Financial', 'Business', 'Computing'],
-  country: ['United States', 'Netherlands', 'Australia']
-};
-
-// Data
+// Data - you can load this from data.json if you want
 const botData = {
   stages: [
     {
@@ -5828,6 +5817,7 @@ const botData = {
     }
   ],
   flows: [
+    // Origin to Sophistication
     { from: [0, 0], to: [1, 0], value: 20, color: '#ef4444' },
     { from: [0, 0], to: [1, 1], value: 8, color: '#ef4444' },
     { from: [0, 0], to: [1, 2], value: 28, color: '#ef4444' },
@@ -5838,6 +5828,7 @@ const botData = {
     { from: [0, 2], to: [1, 1], value: 3, color: '#b91c1c' },
     { from: [0, 2], to: [1, 2], value: 10, color: '#b91c1c' },
     
+    // Sophistication to Industry
     { from: [1, 0], to: [2, 0], value: 15, color: '#fbbf24' },
     { from: [1, 0], to: [2, 1], value: 10, color: '#fbbf24' },
     { from: [1, 0], to: [2, 4], value: 8, color: '#fbbf24' },
@@ -5848,6 +5839,7 @@ const botData = {
     { from: [1, 1], to: [2, 1], value: 3, color: '#f59e0b' },
     { from: [1, 1], to: [2, 3], value: 3, color: '#f59e0b' },
     
+    // Industry to Country
     { from: [2, 0], to: [3, 0], value: 18, color: '#60a5fa' },
     { from: [2, 0], to: [3, 1], value: 3, color: '#60a5fa' },
     { from: [2, 0], to: [3, 2], value: 3, color: '#60a5fa' },
@@ -5866,10 +5858,10 @@ const botWidth = botCanvas.width;
 const botHeight = botCanvas.height;
 const botStageWidth = botWidth / 4;
 const botNodeWidth = 100;
-const botPadding = 35;
-const botBottomPadding = 70;
+const botPadding = 60;
+const botBottomPadding = 100;
 
-// Calculate positions
+// Calculate positions with better spacing
 const botPositions = botData.stages.map((stage, stageIdx) => {
   const x = stageIdx * botStageWidth + botStageWidth / 2;
   const totalHeight = stage.nodes.reduce((sum, n) => sum + n.value, 0) * 3.5;
@@ -5887,308 +5879,325 @@ const botPositions = botData.stages.map((stage, stageIdx) => {
   });
 });
 
-// Find only DIRECT connections (not all reachable nodes)
-function findConnectedElements(stageIdx, nodeIdx) {
-  const connectedNodes = new Set();
-  const connectedFlows = new Set();
-  
-  // Add the selected node
-  connectedNodes.add(`${stageIdx}-${nodeIdx}`);
-  
-  // Find DIRECT flows FROM this node (one step forward)
-  botData.flows.forEach((flow, flowIdx) => {
-    if (flow.from[0] === stageIdx && flow.from[1] === nodeIdx) {
-      connectedFlows.add(flowIdx);
-      connectedNodes.add(`${flow.to[0]}-${flow.to[1]}`);
-    }
-  });
-  
-  // Find DIRECT flows TO this node (one step backward)
-  botData.flows.forEach((flow, flowIdx) => {
-    if (flow.to[0] === stageIdx && flow.to[1] === nodeIdx) {
-      connectedFlows.add(flowIdx);
-      connectedNodes.add(`${flow.from[0]}-${flow.from[1]}`);
-    }
-  });
-  
-  // Now recursively add all forward paths
-  const nodesToProcess = Array.from(connectedNodes).filter(n => {
-    const [s, i] = n.split('-').map(Number);
-    return s > stageIdx; // Only process nodes ahead
-  });
-  
-  nodesToProcess.forEach(nodeKey => {
-    const [s, i] = nodeKey.split('-').map(Number);
-    
-    botData.flows.forEach((flow, flowIdx) => {
-      if (flow.from[0] === s && flow.from[1] === i) {
-        connectedFlows.add(flowIdx);
-        const targetKey = `${flow.to[0]}-${flow.to[1]}`;
-        if (!connectedNodes.has(targetKey)) {
-          connectedNodes.add(targetKey);
-          nodesToProcess.push(targetKey);
-        }
-      }
-    });
-  });
-  
-  // Recursively add all backward paths
-  const backwardNodes = Array.from(connectedNodes).filter(n => {
-    const [s, i] = n.split('-').map(Number);
-    return s < stageIdx; // Only process nodes behind
-  });
-  
-  backwardNodes.forEach(nodeKey => {
-    const [s, i] = nodeKey.split('-').map(Number);
-    
-    botData.flows.forEach((flow, flowIdx) => {
-      if (flow.to[0] === s && flow.to[1] === i) {
-        connectedFlows.add(flowIdx);
-        const sourceKey = `${flow.from[0]}-${flow.from[1]}`;
-        if (!connectedNodes.has(sourceKey)) {
-          connectedNodes.add(sourceKey);
-          backwardNodes.push(sourceKey);
-        }
-      }
-    });
-  });
-  
-  return { nodes: connectedNodes, flows: connectedFlows };
-}
+let botHoveredNode = null;
+let botSelectedNode = null; // For click-to-highlight
+let flowParticles = []; // Animated particles
+let animationRunning = false;
 
-// Get filtered elements based on current selection
-function getFilteredElements() {
-  if (!botActiveCategory || !botActiveValue) {
-    return null; // No filters active
-  }
-  
-  let filteredNodes = new Set();
-  let filteredFlows = new Set();
-  
-  // Map category to stage index
-  const stageMap = {
-    origin: 0,
-    sophistication: 1,
-    industry: 2,
-    country: 3
-  };
-  
-  const stageIdx = stageMap[botActiveCategory];
-  
-  // Find the matching node
-  botData.stages[stageIdx].nodes.forEach((node, nodeIdx) => {
-    if (node.name === botActiveValue) {
-      const connected = findConnectedElements(stageIdx, nodeIdx);
-      connected.nodes.forEach(n => filteredNodes.add(n));
-      connected.flows.forEach(f => filteredFlows.add(f));
-    }
-  });
-  
-  console.log('Filter:', botActiveCategory, '=', botActiveValue);
-  console.log('Connected nodes:', filteredNodes.size);
-  console.log('Connected flows:', filteredFlows.size);
-  
-  return { nodes: filteredNodes, flows: filteredFlows };
-}
-
-// Animate transition
-function animateTransition(callback) {
-  if (botIsAnimating) return;
-  
-  botIsAnimating = true;
-  const startTime = performance.now();
-  const duration = 1000;
-  
-  function animate(currentTime) {
-    const elapsed = currentTime - startTime;
-    const progress = Math.min(elapsed / duration, 1);
-    
-    // Ease-in-out
-    botAnimationProgress = progress < 0.5
-      ? 2 * progress * progress
-      : 1 - Math.pow(-2 * progress + 2, 2) / 2;
-    
-    drawBotVisualization();
-    
-    if (progress < 1) {
-      requestAnimationFrame(animate);
-    } else {
-      botIsAnimating = false;
-      botAnimationProgress = 1;
-      if (callback) callback();
+// Find node at mouse position
+function getBotNodeAtPosition(x, y) {
+  for (let stageIdx = 0; stageIdx < botData.stages.length; stageIdx++) {
+    for (let nodeIdx = 0; nodeIdx < botData.stages[stageIdx].nodes.length; nodeIdx++) {
+      const pos = botPositions[stageIdx][nodeIdx];
+      if (x >= pos.x - botNodeWidth / 2 && x <= pos.x + botNodeWidth / 2 &&
+          y >= pos.y - pos.height / 2 && y <= pos.y + pos.height / 2) {
+        return [stageIdx, nodeIdx];
+      }
     }
   }
-  
-  requestAnimationFrame(animate);
+  return null;
+}
+
+// Get flows connected to a node
+function getBotConnectedFlows(stageIdx, nodeIdx) {
+  return botData.flows.filter(flow =>
+    (flow.from[0] === stageIdx && flow.from[1] === nodeIdx) ||
+    (flow.to[0] === stageIdx && flow.to[1] === nodeIdx)
+  );
+}
+
+// Particle class for flow animation
+class FlowParticle {
+  constructor(flow) {
+    this.flow = flow;
+    this.progress = 0;
+    this.speed = 0.005 + Math.random() * 0.008; // Varied speed
+    this.size = Math.max(3, flow.value / 8);
+    this.opacity = 0.8;
+  }
+
+  update() {
+    this.progress += this.speed;
+    if (this.progress > 1) {
+      this.progress = 0; // Loop particle
+    }
+  }
+
+  getPosition() {
+    const fromPos = botPositions[this.flow.from[0]][this.flow.from[1]];
+    const toPos = botPositions[this.flow.to[0]][this.flow.to[1]];
+
+    // Bezier curve calculation
+    const t = this.progress;
+    const cpX1 = fromPos.x + botStageWidth / 2;
+    const cpX2 = toPos.x - botStageWidth / 2;
+
+    // Cubic bezier
+    const x = Math.pow(1-t, 3) * (fromPos.x + botNodeWidth/2) +
+              3 * Math.pow(1-t, 2) * t * cpX1 +
+              3 * (1-t) * Math.pow(t, 2) * cpX2 +
+              Math.pow(t, 3) * (toPos.x - botNodeWidth/2);
+
+    const y = Math.pow(1-t, 3) * fromPos.y +
+              3 * Math.pow(1-t, 2) * t * fromPos.y +
+              3 * (1-t) * Math.pow(t, 2) * toPos.y +
+              Math.pow(t, 3) * toPos.y;
+
+    return { x, y };
+  }
+
+  draw(ctx) {
+    const pos = this.getPosition();
+    ctx.beginPath();
+    ctx.arc(pos.x, pos.y, this.size, 0, Math.PI * 2);
+    ctx.fillStyle = this.flow.color;
+    ctx.globalAlpha = this.opacity;
+    ctx.fill();
+    ctx.globalAlpha = 1;
+  }
+}
+
+// Initialize particles for all flows
+function initFlowParticles() {
+  flowParticles = [];
+  botData.flows.forEach(flow => {
+    // Number of particles proportional to flow value
+    const particleCount = Math.max(1, Math.floor(flow.value / 10));
+    for (let i = 0; i < particleCount; i++) {
+      const particle = new FlowParticle(flow);
+      particle.progress = Math.random(); // Stagger start positions
+      flowParticles.push(particle);
+    }
+  });
+}
+
+// Animation loop for particles
+function animateFlowParticles() {
+  if (!animationRunning) return;
+
+  // Update particles
+  flowParticles.forEach(p => p.update());
+
+  // Redraw everything
+  drawBotVisualization();
+
+  requestAnimationFrame(animateFlowParticles);
+}
+
+// Start/stop animation
+function toggleFlowAnimation(start) {
+  if (start && !animationRunning) {
+    animationRunning = true;
+    initFlowParticles();
+    animateFlowParticles();
+  } else if (!start) {
+    animationRunning = false;
+  }
 }
 
 function drawBotVisualization() {
   botCtx.clearRect(0, 0, botWidth, botHeight);
-  
-  const filtered = getFilteredElements();
-  const hasFilters = filtered !== null;
-  
+
+  // Determine which node to highlight (selected takes priority over hovered)
+  const activeNode = botSelectedNode || botHoveredNode;
+  const connectedFlows = activeNode ? getBotConnectedFlows(activeNode[0], activeNode[1]) : [];
+
   // Draw flows
-  botData.flows.forEach((flow, flowIdx) => {
+  botData.flows.forEach(flow => {
+    const isConnected = connectedFlows.includes(flow);
     const fromPos = botPositions[flow.from[0]][flow.from[1]];
     const toPos = botPositions[flow.to[0]][flow.to[1]];
+
     const thickness = Math.max(2, flow.value / 1.5);
-    
-    let opacity = 0.25;
-    let shouldShow = true;
-    
-    if (hasFilters) {
-      if (filtered.flows.has(flowIdx)) {
-        opacity = 0.7;
-      } else {
-        opacity = 0.05;
-        shouldShow = botAnimationProgress < 0.5; // Fade out in first half
-      }
+
+    // Enhanced glow effect for connected flows
+    if (isConnected && botSelectedNode) {
+      botCtx.shadowColor = flow.color;
+      botCtx.shadowBlur = 15;
     }
-    
-    if (shouldShow) {
-      botCtx.strokeStyle = flow.color;
-      botCtx.lineWidth = thickness;
-      botCtx.globalAlpha = opacity * (shouldShow ? 1 : (1 - (botAnimationProgress - 0.5) * 2));
-      
-      botCtx.beginPath();
-      botCtx.moveTo(fromPos.x + botNodeWidth / 2, fromPos.y);
-      
-      const cpX1 = fromPos.x + botStageWidth / 2;
-      const cpX2 = toPos.x - botStageWidth / 2;
-      
-      botCtx.bezierCurveTo(
-        cpX1, fromPos.y,
-        cpX2, toPos.y,
-        toPos.x - botNodeWidth / 2, toPos.y
-      );
-      botCtx.stroke();
-    }
+
+    botCtx.strokeStyle = flow.color;
+    botCtx.lineWidth = isConnected ? thickness * 1.5 : thickness;
+    botCtx.globalAlpha = isConnected ? 0.9 : (activeNode ? 0.15 : 0.35);
+
+    botCtx.beginPath();
+    botCtx.moveTo(fromPos.x + botNodeWidth / 2, fromPos.y);
+
+    const cpX1 = fromPos.x + botStageWidth / 2;
+    const cpX2 = toPos.x - botStageWidth / 2;
+
+    botCtx.bezierCurveTo(
+      cpX1, fromPos.y,
+      cpX2, toPos.y,
+      toPos.x - botNodeWidth / 2, toPos.y
+    );
+    botCtx.stroke();
+    botCtx.shadowBlur = 0;
   });
-  
+
   botCtx.globalAlpha = 1;
-  
-  // Draw nodes
+
+  // Draw flow particles if animation is running
+  if (animationRunning) {
+    flowParticles.forEach(particle => {
+      // Only draw particles for connected flows when a node is selected
+      if (!activeNode || connectedFlows.includes(particle.flow)) {
+        particle.draw(botCtx);
+      }
+    });
+  }
+
+  // Draw nodes and stage titles
   botData.stages.forEach((stage, stageIdx) => {
     // Draw stage title
     botCtx.fillStyle = '#9ca3af';
     botCtx.font = 'bold 14px sans-serif';
     botCtx.textAlign = 'center';
-    botCtx.fillText(stage.name.toUpperCase(), stageIdx * botStageWidth + botStageWidth / 2, 10);
-    
+    botCtx.fillText(stage.name.toUpperCase(), stageIdx * botStageWidth + botStageWidth / 2, 40);
+
     stage.nodes.forEach((node, nodeIdx) => {
       const pos = botPositions[stageIdx][nodeIdx];
-      const nodeKey = `${stageIdx}-${nodeIdx}`;
-      
-      let opacity = 1;
-      let scale = 1;
-      let shouldShow = true;
-      
-      if (hasFilters) {
-        if (filtered.nodes.has(nodeKey)) {
-          opacity = 1;
-          scale = 1 + (botAnimationProgress * 0.15); // Grow slightly
-        } else {
-          opacity = 0.1;
-          scale = 1 - (botAnimationProgress * 0.3); // Shrink
-          shouldShow = botAnimationProgress < 0.7; // Disappear in first 70%
-        }
+      const isHovered = botHoveredNode && botHoveredNode[0] === stageIdx && botHoveredNode[1] === nodeIdx;
+      const isSelected = botSelectedNode && botSelectedNode[0] === stageIdx && botSelectedNode[1] === nodeIdx;
+      const isActive = isHovered || isSelected;
+
+      // Dim non-connected nodes when something is selected
+      const isConnectedNode = !activeNode || (activeNode[0] === stageIdx && activeNode[1] === nodeIdx) ||
+        connectedFlows.some(f =>
+          (f.from[0] === stageIdx && f.from[1] === nodeIdx) ||
+          (f.to[0] === stageIdx && f.to[1] === nodeIdx)
+        );
+
+      botCtx.globalAlpha = isConnectedNode ? 1 : 0.4;
+
+      // Draw node rectangle with enhanced effects
+      botCtx.fillStyle = node.color;
+      if (isActive) {
+        botCtx.shadowColor = node.color;
+        botCtx.shadowBlur = isSelected ? 25 : 20;
       }
-      
-      if (shouldShow && scale > 0) {
-        const adjustedOpacity = opacity * (shouldShow ? 1 : (1 - (botAnimationProgress - 0.7) / 0.3));
-        
-        botCtx.save();
-        botCtx.translate(pos.x, pos.y);
-        botCtx.scale(scale, scale);
-        botCtx.translate(-pos.x, -pos.y);
-        
-        // Draw node rectangle
-        botCtx.globalAlpha = adjustedOpacity;
-        botCtx.fillStyle = node.color;
-        botCtx.fillRect(pos.x - botNodeWidth / 2, pos.y - pos.height / 2, botNodeWidth, pos.height);
-        
-        // Draw border
-        botCtx.strokeStyle = filtered && filtered.nodes.has(nodeKey) ? '#ffffff' : '#000';
-        botCtx.lineWidth = filtered && filtered.nodes.has(nodeKey) ? 3 : 2;
-        botCtx.strokeRect(pos.x - botNodeWidth / 2, pos.y - pos.height / 2, botNodeWidth, pos.height);
-        
-        // Draw node name
-        botCtx.fillStyle = '#ffffff';
-        botCtx.font = 'bold 11px sans-serif';
-        botCtx.textAlign = 'center';
-        botCtx.shadowColor = 'rgba(0, 0, 0, 0.8)';
-        botCtx.shadowBlur = 4;
-        
-        const words = node.name.split(' ');
-        words.forEach((word, i) => {
-          botCtx.fillText(word, pos.x, pos.y - (words.length - 1) * 6 + i * 14);
-        });
-        
-        botCtx.shadowBlur = 0;
-        
-        botCtx.restore();
-      }
+      botCtx.fillRect(pos.x - botNodeWidth / 2, pos.y - pos.height / 2, botNodeWidth, pos.height);
+      botCtx.shadowBlur = 0;
+
+      // Draw border
+      botCtx.strokeStyle = isSelected ? '#FFD700' : (isHovered ? '#ffffff' : '#000');
+      botCtx.lineWidth = isSelected ? 4 : (isHovered ? 3 : 2);
+      botCtx.strokeRect(pos.x - botNodeWidth / 2, pos.y - pos.height / 2, botNodeWidth, pos.height);
+
+      // Draw node name
+      botCtx.fillStyle = '#ffffff';
+      botCtx.font = 'bold 11px sans-serif';
+      botCtx.textAlign = 'center';
+      botCtx.shadowColor = 'rgba(0, 0, 0, 0.8)';
+      botCtx.shadowBlur = 4;
+
+      const words = node.name.split(' ');
+      words.forEach((word, i) => {
+        botCtx.fillText(word, pos.x, pos.y - (words.length - 1) * 6 + i * 14);
+      });
+
+      botCtx.shadowBlur = 0;
+      botCtx.globalAlpha = 1;
     });
   });
-  
-  botCtx.globalAlpha = 1;
+
+  // Draw all numbers on top (separate pass to avoid being covered by other nodes)
+  botData.stages.forEach((stage, stageIdx) => {
+    stage.nodes.forEach((node, nodeIdx) => {
+      const pos = botPositions[stageIdx][nodeIdx];
+
+      // Dim non-connected nodes when something is selected
+      const isConnectedNode = !activeNode || (activeNode[0] === stageIdx && activeNode[1] === nodeIdx) ||
+        connectedFlows.some(f =>
+          (f.from[0] === stageIdx && f.from[1] === nodeIdx) ||
+          (f.to[0] === stageIdx && f.to[1] === nodeIdx)
+        );
+
+      botCtx.globalAlpha = isConnectedNode ? 1 : 0.4;
+      botCtx.font = 'bold 15px sans-serif';
+      botCtx.fillStyle = '#60a5fa';
+      botCtx.textAlign = 'center';
+      botCtx.fillText(node.value, pos.x, pos.y + pos.height / 2 + 16);
+      botCtx.globalAlpha = 1;
+    });
+  });
+
+  // Draw instruction text
+  botCtx.font = '12px sans-serif';
+  botCtx.fillStyle = '#71767B';
+  botCtx.textAlign = 'center';
+  const instructionText = botSelectedNode ? 'Click again to deselect' : 'Click a node to lock highlight';
+  botCtx.fillText(instructionText, botWidth / 2, botHeight - 15);
 }
 
-// Event listeners for filters
-const categorySelect = document.getElementById('botCategorySelect');
-const valueSelectGroup = document.getElementById('botValueSelectGroup');
-const valueSelect = document.getElementById('botValueSelect');
-const valueLabel = document.getElementById('botValueLabel');
+// Mouse interaction
+botCanvas.addEventListener('mousemove', (e) => {
+  const rect = botCanvas.getBoundingClientRect();
+  const scaleX = botCanvas.width / rect.width;
+  const scaleY = botCanvas.height / rect.height;
+  const x = (e.clientX - rect.left) * scaleX;
+  const y = (e.clientY - rect.top) * scaleY;
 
-categorySelect.addEventListener('change', (e) => {
-  const category = e.target.value;
-  
-  if (category) {
-    // Show second dropdown
-    valueSelectGroup.style.display = 'flex';
-    valueLabel.textContent = `Step 2: Choose ${category.charAt(0).toUpperCase() + category.slice(1)}`;
-    
-    // Populate options
-    valueSelect.innerHTML = '<option value="">Select...</option>';
-    categoryOptions[category].forEach(option => {
-      const opt = document.createElement('option');
-      opt.value = option;
-      opt.textContent = option;
-      valueSelect.appendChild(opt);
-    });
-    
-    // Reset value selection
-    botActiveCategory = category;
-    botActiveValue = null;
-    valueSelect.value = '';
-  } else {
-    // Hide second dropdown
-    valueSelectGroup.style.display = 'none';
-    botActiveCategory = null;
-    botActiveValue = null;
-    animateTransition();
+  const newHoveredNode = getBotNodeAtPosition(x, y);
+  if (JSON.stringify(newHoveredNode) !== JSON.stringify(botHoveredNode)) {
+    botHoveredNode = newHoveredNode;
+    botCanvas.style.cursor = newHoveredNode ? 'pointer' : 'default';
+    if (!animationRunning) drawBotVisualization();
   }
 });
 
-valueSelect.addEventListener('change', (e) => {
-  botActiveValue = e.target.value || null;
-  animateTransition();
+// Click to lock/unlock highlight
+botCanvas.addEventListener('click', (e) => {
+  const rect = botCanvas.getBoundingClientRect();
+  const scaleX = botCanvas.width / rect.width;
+  const scaleY = botCanvas.height / rect.height;
+  const x = (e.clientX - rect.left) * scaleX;
+  const y = (e.clientY - rect.top) * scaleY;
+
+  const clickedNode = getBotNodeAtPosition(x, y);
+
+  if (clickedNode) {
+    // Toggle selection
+    if (botSelectedNode && botSelectedNode[0] === clickedNode[0] && botSelectedNode[1] === clickedNode[1]) {
+      botSelectedNode = null; // Deselect
+    } else {
+      botSelectedNode = clickedNode; // Select new node
+    }
+    if (!animationRunning) drawBotVisualization();
+  } else {
+    // Click on empty space deselects
+    if (botSelectedNode) {
+      botSelectedNode = null;
+      if (!animationRunning) drawBotVisualization();
+    }
+  }
 });
 
-document.getElementById('botResetFilters').addEventListener('click', () => {
-  botActiveCategory = null;
-  botActiveValue = null;
-  categorySelect.value = '';
-  valueSelect.value = '';
-  valueSelectGroup.style.display = 'none';
-  animateTransition();
+botCanvas.addEventListener('mouseleave', () => {
+  if (botHoveredNode) {
+    botHoveredNode = null;
+    if (!animationRunning) drawBotVisualization();
+  }
 });
+
+// Start flow animation when section comes into view
+const botFlowSection = document.getElementById('sectionBotFlow');
+if (botFlowSection) {
+  const botFlowObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        toggleFlowAnimation(true);
+      } else {
+        toggleFlowAnimation(false);
+      }
+    });
+  }, { threshold: 0.3 });
+  botFlowObserver.observe(botFlowSection);
+}
 
 // Initial draw
-botAnimationProgress = 1;
 drawBotVisualization();
-console.log('✅ Bot visualization rendered successfully!');
+console.log('✅ Bot visualization rendered successfully with particle animation!');
 
 // ========================================
 // SOCIAL MEDIA PLATFORM DASHBOARD
