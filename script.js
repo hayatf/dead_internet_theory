@@ -5310,8 +5310,8 @@ function toggleFlowAnimation(start) {
 function drawBotVisualization() {
   botCtx.clearRect(0, 0, botWidth, botHeight);
 
-  // Determine which node to highlight (selected takes priority over hovered)
-  const activeNode = botSelectedNode; // Only use selected node for hiding, not hovered
+  // Only use selected node from dropdown for filtering
+  const activeNode = botSelectedNode;
   const hoveredNode = botHoveredNode;
   const stageFiltered = botStageFilter !== null && !activeNode;
   const connectedFlows = activeNode ? getBotConnectedFlows(activeNode[0], activeNode[1]) : [];
@@ -5333,22 +5333,22 @@ function drawBotVisualization() {
 
     const thickness = Math.max(2, flow.value / 1.5);
 
-    // Enhanced glow effect for connected flows
-    if ((isConnected || isHovered) && (botSelectedNode || botHoveredNode)) {
+    // Only add glow for selected nodes (not hovered)
+    if (isConnected && activeNode) {
       botCtx.shadowColor = flow.color;
       botCtx.shadowBlur = 15;
     }
 
     botCtx.strokeStyle = flow.color;
-    botCtx.lineWidth = (isConnected || isHovered) ? thickness * 1.5 : thickness;
+    // Subtle thickness increase on hover, no alpha changes
+    botCtx.lineWidth = isHovered ? thickness * 1.2 : thickness;
+    
     if (activeNode) {
       botCtx.globalAlpha = isConnected ? 0.9 : 0.15;
-    } else if (hoveredNode) {
-      botCtx.globalAlpha = isHovered ? 0.9 : 0.15;
     } else if (stageFiltered) {
       botCtx.globalAlpha = isStageFlow ? 0.75 : 0.12;
     } else {
-      botCtx.globalAlpha = 0.35;
+      botCtx.globalAlpha = 0.35; // No fading on hover
     }
 
     botCtx.beginPath();
@@ -5404,26 +5404,13 @@ function drawBotVisualization() {
         )) || (!activeNode && !stageFiltered)
       );
       
-      // Determine if connected to hovered node (for highlighting only)
-      const isHoveredConnected = (
-        (hoveredNode && (
-          (hoveredNode[0] === stageIdx && hoveredNode[1] === nodeIdx) ||
-          hoveredFlows.some(f =>
-            (f.from[0] === stageIdx && f.from[1] === nodeIdx) ||
-            (f.to[0] === stageIdx && f.to[1] === nodeIdx)
-          )
-        ))
-      );
-
       // If a specific node is selected (via dropdown), completely hide unconnected nodes
       if (activeNode && !isConnectedNode) {
         return; // Skip drawing this node completely
       }
 
-      // For hover, just dim instead of hiding
-      const shouldDim = activeNode ? !isConnectedNode : 
-                        hoveredNode ? !isHoveredConnected : 
-                        (stageFiltered ? !isStageNode : false);
+      // No dimming on hover, only on dropdown filter
+      const shouldDim = activeNode ? !isConnectedNode : (stageFiltered ? !isStageNode : false);
       botCtx.globalAlpha = shouldDim ? 0.35 : 1;
 
       // Draw node rectangle with enhanced effects
@@ -5435,9 +5422,9 @@ function drawBotVisualization() {
       botCtx.fillRect(pos.x - botNodeWidth / 2, pos.y - pos.height / 2, botNodeWidth, pos.height);
       botCtx.shadowBlur = 0;
 
-      // Draw border
-      botCtx.strokeStyle = isSelected ? '#FFD700' : (isHovered ? '#ffffff' : '#000');
-      botCtx.lineWidth = isSelected ? 4 : (isHovered ? 3 : 2);
+      // Draw border - subtle highlight on hover
+      botCtx.strokeStyle = isSelected ? '#FFD700' : (isHovered ? '#60a5fa' : '#000');
+      botCtx.lineWidth = isSelected ? 4 : (isHovered ? 2.5 : 2);
       botCtx.strokeRect(pos.x - botNodeWidth / 2, pos.y - pos.height / 2, botNodeWidth, pos.height);
 
       // Draw node name
@@ -5461,7 +5448,7 @@ function drawBotVisualization() {
   botCtx.font = '12px sans-serif';
   botCtx.fillStyle = '#71767B';
   botCtx.textAlign = 'center';
-  const instructionText = botSelectedNode ? 'Click again to deselect' : 'Click a node to lock highlight';
+  const instructionText = botSelectedNode ? 'Use Reset to clear filter' : 'Hover to preview pathways';
   botCtx.fillText(instructionText, botWidth / 2, botHeight - 15);
 }
 
@@ -5481,32 +5468,7 @@ botCanvas.addEventListener('mousemove', (e) => {
   }
 });
 
-// Click to lock/unlock highlight
-botCanvas.addEventListener('click', (e) => {
-  const rect = botCanvas.getBoundingClientRect();
-  const scaleX = botCanvas.width / rect.width;
-  const scaleY = botCanvas.height / rect.height;
-  const x = (e.clientX - rect.left) * scaleX;
-  const y = (e.clientY - rect.top) * scaleY;
-
-  const clickedNode = getBotNodeAtPosition(x, y);
-
-  if (clickedNode) {
-    // Toggle selection
-    if (botSelectedNode && botSelectedNode[0] === clickedNode[0] && botSelectedNode[1] === clickedNode[1]) {
-      botSelectedNode = null; // Deselect
-    } else {
-      botSelectedNode = clickedNode; // Select new node
-    }
-    if (!animationRunning) drawBotVisualization();
-  } else {
-    // Click on empty space deselects
-    if (botSelectedNode) {
-      botSelectedNode = null;
-      if (!animationRunning) drawBotVisualization();
-    }
-  }
-});
+// Click interaction removed - only dropdown filtering allowed
 
 botCanvas.addEventListener('mouseleave', () => {
   if (botHoveredNode) {
