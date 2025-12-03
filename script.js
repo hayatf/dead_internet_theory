@@ -5884,6 +5884,124 @@ let botSelectedNode = null; // For click-to-highlight
 let flowParticles = []; // Animated particles
 let animationRunning = false;
 
+// === Bot Flow Controls (Step 1 / Step 2 selection + reset) ===
+(function setupBotFlowControls() {
+  const botCategorySelect = document.getElementById('botCategorySelect');
+  const botValueSelect = document.getElementById('botValueSelect');
+  const botValueGroup = document.getElementById('botValueGroup');
+  const botResetFilters = document.getElementById('botResetFilters');
+
+  if (!botCategorySelect || !botValueSelect || !botValueGroup) {
+    return;
+  }
+
+  // Populate Step 1 category options dynamically from botData.stages
+  botCategorySelect.innerHTML = '<option value="">Select…</option>';
+  if (Array.isArray(botData.stages)) {
+    botData.stages.forEach((stage, stageIndex) => {
+      const opt = document.createElement('option');
+      opt.value = stage.name || String(stageIndex);
+      opt.textContent = stage.name || ('Stage ' + (stageIndex + 1));
+      opt.dataset.stageIndex = String(stageIndex);
+      botCategorySelect.appendChild(opt);
+    });
+  }
+
+  function getStageIndexFromValue(value) {
+    if (!Array.isArray(botData.stages)) return -1;
+    const byName = botData.stages.findIndex(s => s.name === value);
+    if (byName !== -1) return byName;
+    const numeric = Number(value);
+    if (!Number.isNaN(numeric) && numeric >= 0 && numeric < botData.stages.length) {
+      return numeric;
+    }
+    return -1;
+  }
+
+  botCategorySelect.addEventListener('change', () => {
+    const value = botCategorySelect.value;
+    botValueSelect.innerHTML = '';
+    botSelectedNode = null;
+
+    if (!value) {
+      // Hide Step 2 group if no category selected
+      botValueGroup.classList.add('hidden');
+      if (typeof drawBotVisualization === 'function') {
+        drawBotVisualization();
+      }
+      return;
+    }
+
+    const stageIndex = getStageIndexFromValue(value);
+    if (stageIndex < 0 || !botData.stages[stageIndex] || !Array.isArray(botData.stages[stageIndex].nodes)) {
+      botValueGroup.classList.add('hidden');
+      if (typeof drawBotVisualization === 'function') {
+        drawBotVisualization();
+      }
+      return;
+    }
+
+    const stage = botData.stages[stageIndex];
+
+    // Placeholder option: "All <Stage Name>"
+    const placeholder = document.createElement('option');
+    placeholder.value = '';
+    placeholder.textContent = 'All ' + (stage.name || 'nodes');
+    botValueSelect.appendChild(placeholder);
+
+    stage.nodes.forEach((node, nodeIndex) => {
+      const opt = document.createElement('option');
+      opt.value = node.name || String(nodeIndex);
+      opt.textContent = node.name || ('Node ' + (nodeIndex + 1));
+      opt.dataset.stageIndex = String(stageIndex);
+      opt.dataset.nodeIndex = String(nodeIndex);
+      botValueSelect.appendChild(opt);
+    });
+
+    botValueGroup.classList.remove('hidden');
+
+    if (typeof drawBotVisualization === 'function') {
+      drawBotVisualization();
+    }
+  });
+
+  botValueSelect.addEventListener('change', () => {
+    const categoryValue = botCategorySelect.value;
+    const stageIndex = getStageIndexFromValue(categoryValue);
+
+    if (!botValueSelect.value || stageIndex < 0) {
+      botSelectedNode = null;
+    } else {
+      const selectedOption = botValueSelect.options[botValueSelect.selectedIndex];
+      const nodeIndex = Number(selectedOption.dataset.nodeIndex);
+      if (Number.isNaN(nodeIndex)) {
+        botSelectedNode = null;
+      } else {
+        botSelectedNode = [stageIndex, nodeIndex];
+      }
+    }
+
+    if (typeof drawBotVisualization === 'function') {
+      drawBotVisualization();
+    }
+  });
+
+  if (botResetFilters) {
+    botResetFilters.addEventListener('click', () => {
+      // Reset only the bot flow controls here; dashboard-wide filters are handled elsewhere
+      botCategorySelect.value = '';
+      botValueSelect.innerHTML = '';
+      botValueGroup.classList.add('hidden');
+      botSelectedNode = null;
+
+      if (typeof drawBotVisualization === 'function') {
+        drawBotVisualization();
+      }
+    });
+  }
+})();
+
+
 // Find node at mouse position
 function getBotNodeAtPosition(x, y) {
   for (let stageIdx = 0; stageIdx < botData.stages.length; stageIdx++) {

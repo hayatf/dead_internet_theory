@@ -117,7 +117,6 @@ p {
 #section2 { background: var(--primary-dark); }
 #section3 { background: var(--primary-dark); }
 #section4 { background: var(--primary-dark); }
-#section5 { background: var(--primary-dark); }
 #sectionBotFlow { background: var(--primary-dark); }
 #section6 { background: var(--primary-dark); }
 #section7 { background: var(--primary-dark); }
@@ -149,9 +148,6 @@ p {
 }
 #section4 { 
   background: linear-gradient(135deg, var(--primary-dark) 0%, var(--secondary-dark) 100%);
-}
-#section5 { 
-  background: linear-gradient(135deg, var(--secondary-dark) 0%, var(--primary-dark) 100%);
 }
 #sectionBotFlow { 
   background: linear-gradient(135deg, var(--secondary-dark) 0%, var(--primary-dark) 100%);
