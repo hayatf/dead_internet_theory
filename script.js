@@ -5311,30 +5311,40 @@ function drawBotVisualization() {
   botCtx.clearRect(0, 0, botWidth, botHeight);
 
   // Determine which node to highlight (selected takes priority over hovered)
-  const activeNode = botSelectedNode || botHoveredNode;
+  const activeNode = botSelectedNode; // Only use selected node for hiding, not hovered
+  const hoveredNode = botHoveredNode;
   const stageFiltered = botStageFilter !== null && !activeNode;
   const connectedFlows = activeNode ? getBotConnectedFlows(activeNode[0], activeNode[1]) : [];
+  const hoveredFlows = hoveredNode && !activeNode ? getBotConnectedFlows(hoveredNode[0], hoveredNode[1]) : [];
 
   // Draw flows
   botData.flows.forEach(flow => {
     const isConnected = connectedFlows.includes(flow);
+    const isHovered = hoveredFlows.includes(flow);
     const fromPos = botPositions[flow.from[0]][flow.from[1]];
     const toPos = botPositions[flow.to[0]][flow.to[1]];
     const isStageFlow = stageFiltered &&
       (flow.from[0] === botStageFilter || flow.to[0] === botStageFilter);
 
+    // If a specific node is selected (via dropdown), only show flows connected to it
+    if (activeNode && !isConnected) {
+      return; // Skip drawing this flow completely
+    }
+
     const thickness = Math.max(2, flow.value / 1.5);
 
     // Enhanced glow effect for connected flows
-    if (isConnected && botSelectedNode) {
+    if ((isConnected || isHovered) && (botSelectedNode || botHoveredNode)) {
       botCtx.shadowColor = flow.color;
       botCtx.shadowBlur = 15;
     }
 
     botCtx.strokeStyle = flow.color;
-    botCtx.lineWidth = isConnected ? thickness * 1.5 : thickness;
+    botCtx.lineWidth = (isConnected || isHovered) ? thickness * 1.5 : thickness;
     if (activeNode) {
       botCtx.globalAlpha = isConnected ? 0.9 : 0.15;
+    } else if (hoveredNode) {
+      botCtx.globalAlpha = isHovered ? 0.9 : 0.15;
     } else if (stageFiltered) {
       botCtx.globalAlpha = isStageFlow ? 0.75 : 0.12;
     } else {
@@ -5383,7 +5393,7 @@ function drawBotVisualization() {
       const isActive = isHovered || isSelected;
       const isStageNode = stageFiltered && stageIdx === botStageFilter;
 
-      // Dim non-connected nodes when something is selected
+      // Determine if this node is connected when a specific node is selected
       const isConnectedNode = (
         (activeNode && (
           (activeNode[0] === stageIdx && activeNode[1] === nodeIdx) ||
@@ -5393,8 +5403,27 @@ function drawBotVisualization() {
           )
         )) || (!activeNode && !stageFiltered)
       );
+      
+      // Determine if connected to hovered node (for highlighting only)
+      const isHoveredConnected = (
+        (hoveredNode && (
+          (hoveredNode[0] === stageIdx && hoveredNode[1] === nodeIdx) ||
+          hoveredFlows.some(f =>
+            (f.from[0] === stageIdx && f.from[1] === nodeIdx) ||
+            (f.to[0] === stageIdx && f.to[1] === nodeIdx)
+          )
+        ))
+      );
 
-      const shouldDim = activeNode ? !isConnectedNode : (stageFiltered ? !isStageNode : false);
+      // If a specific node is selected (via dropdown), completely hide unconnected nodes
+      if (activeNode && !isConnectedNode) {
+        return; // Skip drawing this node completely
+      }
+
+      // For hover, just dim instead of hiding
+      const shouldDim = activeNode ? !isConnectedNode : 
+                        hoveredNode ? !isHoveredConnected : 
+                        (stageFiltered ? !isStageNode : false);
       botCtx.globalAlpha = shouldDim ? 0.35 : 1;
 
       // Draw node rectangle with enhanced effects
@@ -5424,32 +5453,6 @@ function drawBotVisualization() {
       });
 
       botCtx.shadowBlur = 0;
-      botCtx.globalAlpha = 1;
-    });
-  });
-
-  // Draw all numbers on top (separate pass to avoid being covered by other nodes)
-  botData.stages.forEach((stage, stageIdx) => {
-    stage.nodes.forEach((node, nodeIdx) => {
-      const pos = botPositions[stageIdx][nodeIdx];
-
-      // Dim non-connected nodes when something is selected
-      const isConnectedNode = (activeNode && (
-        (activeNode[0] === stageIdx && activeNode[1] === nodeIdx) ||
-        connectedFlows.some(f =>
-          (f.from[0] === stageIdx && f.from[1] === nodeIdx) ||
-          (f.to[0] === stageIdx && f.to[1] === nodeIdx)
-        )
-      )) || (!activeNode && !stageFiltered);
-
-      const isStageNode = stageFiltered && stageIdx === botStageFilter;
-      const shouldDim = activeNode ? !isConnectedNode : (stageFiltered ? !isStageNode : false);
-
-      botCtx.globalAlpha = shouldDim ? 0.35 : 1;
-      botCtx.font = 'bold 15px sans-serif';
-      botCtx.fillStyle = '#60a5fa';
-      botCtx.textAlign = 'center';
-      botCtx.fillText(node.value, pos.x, pos.y + pos.height / 2 + 16);
       botCtx.globalAlpha = 1;
     });
   });

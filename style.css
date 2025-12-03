@@ -5796,29 +5796,7 @@ svg {
 /* ========================================
    TRAFFIC SECTION STYLES
    ======================================== */
-  max-width: 900px;
-  margin-left: auto;
-  margin-right: auto;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  animation: fadeInUp 1s ease 0.2s backwards;
-  flex-wrap: wrap;
-  text-align: center;
-}
-
-.subtitle-icon {
-  font-size: 1.2rem;
-}
-
-.traffic-source {
-  font-size: 0.75rem;
-  color: #666;
-  margin-top: 0.2rem;
-  font-style: italic;
-}*/
-
+   
 /* ========================================
    CONCLUSION SECTION STYLES
    ======================================== */
@@ -7222,6 +7200,8 @@ svg {
     text-transform: uppercase;
     font-weight: 600;
     letter-spacing: 0.5px;
+    position: relative;
+    z-index: 10;
   }
 
   .bot-select {
