@@ -1,4 +1,4 @@
-# CS171 Project -- Dead Internet Theory?
+# CS171 Project -- Dead Internet Theory
 
 # The Dead Internet Theory – Interactive Web Experience
 
