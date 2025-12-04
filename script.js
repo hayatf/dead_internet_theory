@@ -4968,14 +4968,6 @@ const botCtx = botCanvas.getContext('2d');
 const botData = {
   stages: [
     {
-      name: 'Origin',
-      nodes: [
-        { name: 'Data Center', value: 56, color: '#ef4444' },
-        { name: 'Residential Proxy', value: 26, color: '#dc2626' },
-        { name: 'Mobile ISP', value: 21, color: '#b91c1c' }
-      ]
-    },
-    {
       name: 'Sophistication',
       nodes: [
         { name: 'Simple', value: 40, color: '#fbbf24' },
@@ -5003,46 +4995,35 @@ const botData = {
     }
   ],
   flows: [
-    // Origin to Sophistication
-    { from: [0, 0], to: [1, 0], value: 20, color: '#ef4444' },
-    { from: [0, 0], to: [1, 1], value: 8, color: '#ef4444' },
-    { from: [0, 0], to: [1, 2], value: 28, color: '#ef4444' },
-    { from: [0, 1], to: [1, 0], value: 12, color: '#dc2626' },
-    { from: [0, 1], to: [1, 1], value: 4, color: '#dc2626' },
-    { from: [0, 1], to: [1, 2], value: 10, color: '#dc2626' },
-    { from: [0, 2], to: [1, 0], value: 8, color: '#b91c1c' },
-    { from: [0, 2], to: [1, 1], value: 3, color: '#b91c1c' },
-    { from: [0, 2], to: [1, 2], value: 10, color: '#b91c1c' },
-    
     // Sophistication to Industry
-    { from: [1, 0], to: [2, 0], value: 15, color: '#fbbf24' },
-    { from: [1, 0], to: [2, 1], value: 10, color: '#fbbf24' },
-    { from: [1, 0], to: [2, 4], value: 8, color: '#fbbf24' },
-    { from: [1, 2], to: [2, 2], value: 26, color: '#d97706' },
-    { from: [1, 2], to: [2, 1], value: 12, color: '#d97706' },
-    { from: [1, 2], to: [2, 3], value: 10, color: '#d97706' },
-    { from: [1, 1], to: [2, 0], value: 6, color: '#f59e0b' },
-    { from: [1, 1], to: [2, 1], value: 3, color: '#f59e0b' },
-    { from: [1, 1], to: [2, 3], value: 3, color: '#f59e0b' },
+    { from: [0, 0], to: [1, 0], value: 15, color: '#fbbf24' },
+    { from: [0, 0], to: [1, 1], value: 10, color: '#fbbf24' },
+    { from: [0, 0], to: [1, 4], value: 8, color: '#fbbf24' },
+    { from: [0, 2], to: [1, 2], value: 26, color: '#d97706' },
+    { from: [0, 2], to: [1, 1], value: 12, color: '#d97706' },
+    { from: [0, 2], to: [1, 3], value: 10, color: '#d97706' },
+    { from: [0, 1], to: [1, 0], value: 6, color: '#f59e0b' },
+    { from: [0, 1], to: [1, 1], value: 3, color: '#f59e0b' },
+    { from: [0, 1], to: [1, 3], value: 3, color: '#f59e0b' },
     
     // Industry to Country
-    { from: [2, 0], to: [3, 0], value: 18, color: '#60a5fa' },
-    { from: [2, 0], to: [3, 1], value: 3, color: '#60a5fa' },
-    { from: [2, 0], to: [3, 2], value: 3, color: '#60a5fa' },
-    { from: [2, 1], to: [3, 0], value: 12, color: '#3b82f6' },
-    { from: [2, 1], to: [3, 2], value: 8, color: '#3b82f6' },
-    { from: [2, 2], to: [3, 0], value: 25, color: '#2563eb' },
-    { from: [2, 3], to: [3, 0], value: 8, color: '#1d4ed8' },
-    { from: [2, 3], to: [3, 1], value: 2, color: '#1d4ed8' },
-    { from: [2, 4], to: [3, 0], value: 7, color: '#1e40af' },
-    { from: [2, 4], to: [3, 1], value: 1, color: '#1e40af' }
+    { from: [1, 0], to: [2, 0], value: 18, color: '#60a5fa' },
+    { from: [1, 0], to: [2, 1], value: 3, color: '#60a5fa' },
+    { from: [1, 0], to: [2, 2], value: 3, color: '#60a5fa' },
+    { from: [1, 1], to: [2, 0], value: 12, color: '#3b82f6' },
+    { from: [1, 1], to: [2, 2], value: 8, color: '#3b82f6' },
+    { from: [1, 2], to: [2, 0], value: 25, color: '#2563eb' },
+    { from: [1, 3], to: [2, 0], value: 8, color: '#1d4ed8' },
+    { from: [1, 3], to: [2, 1], value: 2, color: '#1d4ed8' },
+    { from: [1, 4], to: [2, 0], value: 7, color: '#1e40af' },
+    { from: [1, 4], to: [2, 1], value: 1, color: '#1e40af' }
   ]
 };
 
 // Layout calculations
 const botWidth = botCanvas.width;
 const botHeight = botCanvas.height;
-const botStageWidth = botWidth / 4;
+const botStageWidth = botWidth / 3; // Changed from 4 to 3 stages
 const botNodeWidth = 100;
 const botPadding = 60;
 const botBottomPadding = 100;
@@ -5133,10 +5114,10 @@ let animationRunning = false;
     botStageFilter = stageIndex;
     const stage = botData.stages[stageIndex];
 
-    // Placeholder option: "All <Stage Name>"
+    // Placeholder option: "Select..."
     const placeholder = document.createElement('option');
     placeholder.value = '';
-    placeholder.textContent = 'All ' + (stage.name || 'nodes');
+    placeholder.textContent = 'Select...';
     botValueSelect.appendChild(placeholder);
 
     stage.nodes.forEach((node, nodeIndex) => {
@@ -5333,15 +5314,18 @@ function drawBotVisualization() {
 
     const thickness = Math.max(2, flow.value / 1.5);
 
-    // Only add glow for selected nodes (not hovered)
+    // Add glow for selected nodes and subtle glow for hovered nodes
     if (isConnected && activeNode) {
       botCtx.shadowColor = flow.color;
       botCtx.shadowBlur = 15;
+    } else if (isHovered && !activeNode) {
+      botCtx.shadowColor = flow.color;
+      botCtx.shadowBlur = 8;
     }
 
     botCtx.strokeStyle = flow.color;
-    // Subtle thickness increase on hover, no alpha changes
-    botCtx.lineWidth = isHovered ? thickness * 1.2 : thickness;
+    // More noticeable thickness increase on hover
+    botCtx.lineWidth = isHovered ? thickness * 1.5 : thickness;
     
     if (activeNode) {
       botCtx.globalAlpha = isConnected ? 0.9 : 0.15;
@@ -5422,9 +5406,9 @@ function drawBotVisualization() {
       botCtx.fillRect(pos.x - botNodeWidth / 2, pos.y - pos.height / 2, botNodeWidth, pos.height);
       botCtx.shadowBlur = 0;
 
-      // Draw border - subtle highlight on hover
+      // Draw border - more visible highlight on hover
       botCtx.strokeStyle = isSelected ? '#FFD700' : (isHovered ? '#60a5fa' : '#000');
-      botCtx.lineWidth = isSelected ? 4 : (isHovered ? 2.5 : 2);
+      botCtx.lineWidth = isSelected ? 4 : (isHovered ? 3 : 2);
       botCtx.strokeRect(pos.x - botNodeWidth / 2, pos.y - pos.height / 2, botNodeWidth, pos.height);
 
       // Draw node name
@@ -5449,7 +5433,7 @@ function drawBotVisualization() {
   botCtx.fillStyle = '#71767B';
   botCtx.textAlign = 'center';
   const instructionText = botSelectedNode ? 'Use Reset to clear filter' : 'Hover to preview pathways';
-  botCtx.fillText(instructionText, botWidth / 2, botHeight - 15);
+  botCtx.fillText(instructionText, botWidth / 2, botHeight - 5);
 }
 
 // Mouse interaction

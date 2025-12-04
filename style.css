@@ -3646,11 +3646,15 @@ svg {
   gap: 2px;
   margin-bottom: 1rem;
   user-select: none;
-  width: 500px;
-  height: 500px;
+  width: min(500px, 90vw);
+  height: min(500px, 90vw);
+  max-width: 500px;
+  max-height: 500px;
   box-sizing: border-box;
   grid-auto-flow: row;
   aspect-ratio: 1 / 1;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .tweet-card {
@@ -6346,31 +6350,6 @@ svg {
   display: block;
 }
 
-/* Make tweet grid compact so the selection UI fits on one screen */
-.tweet-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(44px, 1fr));
-  gap: 8px;
-  width: 100%;
-  justify-items: center;
-  align-items: center;
-  padding: 6px;
-  margin: 0 auto;
-  max-width: 980px;
-}
-
-.tweet-grid .tweet-card {
-  width: 52px;
-  height: 52px;
-  padding: 6px;
-  border-radius: 8px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  font-size: 10px;
-}
-
 /* Bot reveal viz responsive container */
 #botRevealViz {
   width: 100%;
@@ -6396,15 +6375,22 @@ svg {
   }
 
   .tweet-grid {
-    grid-template-columns: repeat(auto-fit, minmax(36px, 1fr));
-    gap: 6px;
+    grid-template-columns: repeat(10, 1fr);
+    grid-template-rows: repeat(10, 1fr);
+    width: min(400px, 95vw);
+    height: min(400px, 95vw);
+    gap: 1px;
   }
 
   .tweet-grid .tweet-card {
-    width: 44px;
-    height: 44px;
-    font-size: 10px;
-    padding: 4px;
+    padding: 2px;
+    font-size: 8px;
+  }
+  
+  .tweet-pfp {
+    width: 12px;
+    height: 12px;
+    font-size: 7px;
   }
 
   .map-tooltip,
@@ -6428,19 +6414,21 @@ svg {
   }
   
   .tweet-grid {
-    width: 380px;
-    height: 380px;
-    gap: 3px;
+    width: min(420px, 85vw);
+    height: min(420px, 85vw);
+    gap: 2px;
+    grid-template-columns: repeat(10, 1fr);
+    grid-template-rows: repeat(10, 1fr);
   }
   
   .tweet-card {
-    padding: 1px;
+    padding: 3px;
   }
   
   .tweet-pfp {
-    width: 11px;
-    height: 11px;
-    font-size: 7px;
+    width: 14px;
+    height: 14px;
+    font-size: 8px;
   }
 }
 
@@ -6452,11 +6440,15 @@ svg {
   }
   
   .tweet-grid {
-    width: 350px;
-    height: 350px;
+    width: min(450px, 90vw);
+    height: min(450px, 90vw);
     grid-template-columns: repeat(10, 1fr);
     grid-template-rows: repeat(10, 1fr);
     gap: 2px;
+  }
+  
+  .tweet-card {
+    padding: 4px;
   }
 }
 
