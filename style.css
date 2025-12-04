@@ -2442,7 +2442,7 @@ svg {
 .intro-text-line1 {
   font-size: var(--font-size-lg);
   font-weight: 300;
-  color: var(--text-secondary);
+  color: var(--text-primary);
   font-style: italic;
   margin-bottom: 0.5rem;
   animation-delay: 0.2s;
@@ -2470,7 +2470,7 @@ svg {
 .intro-text-line3 {
   font-size: var(--font-size-lg);
   font-weight: 400;
-  color: var(--text-secondary);
+  color: var(--text-primary);
   font-style: italic;
   margin-bottom: 0;
   animation-delay: 0.8s;
@@ -6794,7 +6794,7 @@ svg {
 
 .chat-subtitle {
   font-size: 0.85rem;
-  color: var(--text-secondary);
+  color: rgba(255, 255, 255, 0.75);
   line-height: 1.4;
   margin: 0;
 }
