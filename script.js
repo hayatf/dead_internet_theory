@@ -6719,3 +6719,2518 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
 });})
+
+// ========================================
+// BOT CLASSIFICATION SECTION FUNCTIONALITY
+// ========================================
+
+// Bot traffic data from Imperva 2024 report
+const botTrafficData = {
+  yearly: [
+    { year: 2013, badBot: 23.6, goodBot: 19.4, human: 57.0 },
+    { year: 2014, badBot: 22.8, goodBot: 36.3, human: 40.9 },
+    { year: 2015, badBot: 18.6, goodBot: 27.0, human: 54.4 },
+    { year: 2016, badBot: 19.9, goodBot: 18.8, human: 61.3 },
+    { year: 2017, badBot: 21.8, goodBot: 20.4, human: 57.8 },
+    { year: 2018, badBot: 20.4, goodBot: 17.5, human: 62.1 },
+    { year: 2019, badBot: 24.1, goodBot: 13.1, human: 62.8 },
+    { year: 2020, badBot: 25.6, goodBot: 15.2, human: 59.2 },
+    { year: 2021, badBot: 27.7, goodBot: 14.6, human: 57.7 },
+    { year: 2022, badBot: 30.2, goodBot: 17.3, human: 52.6 },
+    { year: 2023, badBot: 32.0, goodBot: 17.6, human: 50.4 }
+  ],
+  monthly2023: [
+    { month: 'Jan', badBot: 30.1, goodBot: 17.5, human: 52.4 },
+    { month: 'Feb', badBot: 30.8, goodBot: 17.7, human: 51.5 },
+    { month: 'Mar', badBot: 31.6, goodBot: 17.9, human: 50.6 },
+    { month: 'Apr', badBot: 32.8, goodBot: 18.6, human: 48.5 },
+    { month: 'May', badBot: 30.8, goodBot: 18.5, human: 50.7 },
+    { month: 'Jun', badBot: 30.9, goodBot: 19.3, human: 49.8 },
+    { month: 'Jul', badBot: 31.7, goodBot: 19.1, human: 49.2 },
+    { month: 'Aug', badBot: 31.9, goodBot: 18.9, human: 49.2 },
+    { month: 'Sep', badBot: 31.7, goodBot: 18.3, human: 50.0 },
+    { month: 'Oct', badBot: 32.7, goodBot: 17.1, human: 50.2 },
+    { month: 'Nov', badBot: 32.7, goodBot: 16.3, human: 51.0 },
+    { month: 'Dec', badBot: 34.2, goodBot: 15.0, human: 50.8 }
+  ],
+  sophistication: [
+    { type: 'Evasive', value: 60.5, color: '#dc2626' },
+    { type: 'Advanced', value: 27.1, color: '#f59e0b' },
+    { type: 'Moderate', value: 12.4, color: '#10b981' }
+  ]
+};
+
+// Industry attack data
+const industryData = [
+  { industry: 'Gaming', badBotPercent: 57.2, goodBotPercent: 3.3, humanPercent: 39.5 },
+  { industry: 'Telecom & ISPs', badBotPercent: 49.3, goodBotPercent: 15.2, humanPercent: 35.6 },
+  { industry: 'Computing & IT', badBotPercent: 45.9, goodBotPercent: 13.5, humanPercent: 40.6 },
+  { industry: 'Travel', badBotPercent: 44.5, goodBotPercent: 4.4, humanPercent: 51.1 },
+  { industry: 'Community & Society', badBotPercent: 42.2, goodBotPercent: 6.7, humanPercent: 51.1 },
+  { industry: 'Business Services', badBotPercent: 40.9, goodBotPercent: 7.7, humanPercent: 51.4 },
+  { industry: 'Healthcare', badBotPercent: 33.4, goodBotPercent: 6.8, humanPercent: 59.8 },
+  { industry: 'News', badBotPercent: 31.9, goodBotPercent: 7.8, humanPercent: 60.3 },
+  { industry: 'Entertainment', badBotPercent: 31.1, goodBotPercent: 55.4, humanPercent: 13.5 },
+  { industry: 'Gambling', badBotPercent: 30.8, goodBotPercent: 1.8, humanPercent: 67.5 },
+  { industry: 'Financial Services', badBotPercent: 27.0, goodBotPercent: 27.3, humanPercent: 45.7 },
+  { industry: 'Retail', badBotPercent: 25.8, goodBotPercent: 20.4, humanPercent: 53.8 },
+  { industry: 'Education', badBotPercent: 23.9, goodBotPercent: 9.6, humanPercent: 66.5 },
+  { industry: 'Law & Government', badBotPercent: 22.8, goodBotPercent: 6.8, humanPercent: 70.4 },
+  { industry: 'Lifestyle', badBotPercent: 22.7, goodBotPercent: 8.9, humanPercent: 68.4 },
+  { industry: 'Sports', badBotPercent: 21.4, goodBotPercent: 6.5, humanPercent: 72.1 },
+  { industry: 'Automotive', badBotPercent: 21.3, goodBotPercent: 13.5, humanPercent: 65.2 },
+  { industry: 'Food & Groceries', badBotPercent: 19.0, goodBotPercent: 36.2, humanPercent: 44.9 },
+  { industry: 'Marketing', badBotPercent: 18.1, goodBotPercent: 1.5, humanPercent: 80.4 }
+];
+
+// Traffic signatures for detection game
+const trafficSignatures = [
+  {
+    requestRate: '2.3 req/sec',
+    userAgent: 'Chrome 118.0.0.0',
+    sessionDuration: '0.2 seconds',
+    mouseMovement: 'None detected',
+    type: 'bad-bot',
+    explanation: 'Very short session with no mouse movement indicates automated behavior, likely a scraper bot.'
+  },
+  {
+    requestRate: '0.1 req/sec',
+    userAgent: 'Googlebot/2.1',
+    sessionDuration: '45 seconds',
+    mouseMovement: 'N/A (crawler)',
+    type: 'good-bot',
+    explanation: 'Googlebot has a legitimate user agent and crawls at a reasonable rate for search indexing.'
+  },
+  {
+    requestRate: '0.8 req/sec',
+    userAgent: 'Safari 17.0',
+    sessionDuration: '8 minutes',
+    mouseMovement: 'Natural patterns',
+    type: 'human',
+    explanation: 'Normal request rate with natural mouse movement and extended session indicates human behavior.'
+  },
+  {
+    requestRate: '15.7 req/sec',
+    userAgent: 'Mozilla/5.0 (fake)',
+    sessionDuration: '1.1 seconds',
+    mouseMovement: 'Identical patterns',
+    type: 'bad-bot',
+    explanation: 'Extremely high request rate with fake user agent and robotic mouse patterns indicates malicious bot.'
+  },
+  {
+    requestRate: '0.3 req/sec',
+    userAgent: 'UptimeRobot/2.0',
+    sessionDuration: '5 seconds',
+    mouseMovement: 'N/A (monitoring)',
+    type: 'good-bot',
+    explanation: 'UptimeRobot is a legitimate monitoring service that checks website availability.'
+  }
+];
+
+let currentSignatureIndex = 0;
+let detectionScore = 0;
+
+// Initialize bot traffic chart when DOM is ready
+document.addEventListener('DOMContentLoaded', function() {
+  initializeBotTrafficChart();
+});
+
+function initializeBotTrafficChart() {
+  createMainTimeline();
+  createIndustrySparklines();
+  setupClearButton();
+}
+
+function createMainTimeline() {
+  const container = d3.select('#mainTimeline');
+  container.selectAll('*').remove();
+  
+  const containerRect = container.node().getBoundingClientRect();
+  const width = containerRect.width;
+  const height = containerRect.height;
+  const margin = { top: 80, right: 80, bottom: 70, left: 80 };
+  
+  const svg = container.append('svg')
+    .attr('width', width)
+    .attr('height', height)
+    .attr('viewBox', `0 0 ${width} ${height}`);
+  
+  const chartWidth = width - margin.left - margin.right;
+  const chartHeight = height - margin.top - margin.bottom;
+  
+  const g = svg.append('g')
+    .attr('transform', `translate(${margin.left}, ${margin.top})`);
+  
+  // Store references globally for interaction
+  window.mainChartG = g;
+  window.mainChartYScale = null;
+  window.mainChartXScale = null;
+  window.mainChartWidth = chartWidth;
+  
+  // Historical data
+  const data = [
+    { year: 2013, human: 23.6, goodBot: 19.4, badBot: 57.0 },
+    { year: 2014, human: 22.8, goodBot: 36.3, badBot: 40.9 },
+    { year: 2015, human: 18.8, goodBot: 27.0, badBot: 54.4 },
+    { year: 2016, human: 19.9, goodBot: 18.8, badBot: 61.3 },
+    { year: 2017, human: 21.8, goodBot: 20.4, badBot: 57.8 },
+    { year: 2018, human: 20.4, goodBot: 17.5, badBot: 62.1 },
+    { year: 2019, human: 24.1, goodBot: 13.1, badBot: 62.8 },
+    { year: 2020, human: 25.8, goodBot: 15.2, badBot: 59.2 },
+    { year: 2021, human: 27.7, goodBot: 14.6, badBot: 57.7 },
+    { year: 2022, human: 30.2, goodBot: 17.3, badBot: 52.6 },
+    { year: 2023, human: 32.0, goodBot: 17.6, badBot: 50.4 }
+  ];
+  
+  // Scales
+  const xScale = d3.scaleLinear()
+    .domain([2013, 2023])
+    .range([0, chartWidth]);
+  
+  const yScale = d3.scaleLinear()
+    .domain([0, 100])
+    .range([chartHeight, 0]);
+  
+  // Store scales globally
+  window.mainChartXScale = xScale;
+  window.mainChartYScale = yScale;
+  
+  // Colors
+  const colors = {
+    human: '#1D9BF0',
+    goodBot: '#00BA7C',
+    badBot: '#F4212E'
+  };
+  
+  // Stack generator
+  const stackGenerator = d3.stack()
+    .keys(['human', 'goodBot', 'badBot']);
+  
+  const series = stackGenerator(data);
+  
+  // Area generator
+  const areaGenerator = d3.area()
+    .x(d => xScale(d.data.year))
+    .y0(d => yScale(d[0]))
+    .y1(d => yScale(d[1]))
+    .curve(d3.curveMonotoneX);
+  
+  // Draw areas
+  g.selectAll('.area')
+    .data(series)
+    .join('path')
+    .attr('class', 'area')
+    .attr('fill', d => colors[d.key])
+    .attr('d', areaGenerator)
+    .style('opacity', 0.8);
+  
+  // Add percentage labels
+  data.forEach(d => {
+    const x = xScale(d.year);
+    
+    // Bad bot (top)
+    if (d.badBot > 10) {
+      g.append('text')
+        .attr('x', x)
+        .attr('y', yScale(100 - d.badBot/2))
+        .attr('text-anchor', 'middle')
+        .attr('fill', '#E7E9EA')
+        .style('font-size', '11px')
+        .style('font-weight', '600')
+        .style('text-shadow', '0 1px 3px rgba(0,0,0,0.8)')
+        .text(`${d.badBot}%`);
+    }
+    
+    // Good bot (middle)
+    if (d.goodBot > 10) {
+      g.append('text')
+        .attr('x', x)
+        .attr('y', yScale(d.human + d.goodBot/2))
+        .attr('text-anchor', 'middle')
+        .attr('fill', '#E7E9EA')
+        .style('font-size', '11px')
+        .style('font-weight', '600')
+        .style('text-shadow', '0 1px 3px rgba(0,0,0,0.8)')
+        .text(`${d.goodBot}%`);
+    }
+    
+    // Human (bottom)
+    if (d.human > 10) {
+      g.append('text')
+        .attr('x', x)
+        .attr('y', yScale(d.human/2))
+        .attr('text-anchor', 'middle')
+        .attr('fill', '#E7E9EA')
+        .style('font-size', '11px')
+        .style('font-weight', '600')
+        .style('text-shadow', '0 1px 3px rgba(0,0,0,0.8)')
+        .text(`${d.human}%`);
+    }
+  });
+  
+  // Axes
+  const xAxis = g.append('g')
+    .attr('transform', `translate(0, ${chartHeight})`)
+    .call(d3.axisBottom(xScale)
+      .tickFormat(d3.format('d'))
+      .tickValues(data.map(d => d.year)));
+  
+  xAxis.selectAll('text')
+    .style('font-size', '12px')
+    .style('fill', '#71767B');
+  
+  xAxis.selectAll('line, path')
+    .style('stroke', '#2F3336');
+  
+  const yAxis = g.append('g')
+    .call(d3.axisLeft(yScale)
+      .tickFormat(d => d + '%')
+      .tickValues([0, 25, 50, 75, 100]));
+  
+  yAxis.selectAll('text')
+    .style('font-size', '12px')
+    .style('fill', '#71767B');
+  
+  yAxis.selectAll('line, path')
+    .style('stroke', '#2F3336');
+  
+  // Title
+  svg.append('text')
+    .attr('x', width / 2)
+    .attr('y', 30)
+    .attr('text-anchor', 'middle')
+    .style('font-size', '20px')
+    .style('font-weight', 'bold')
+    .style('fill', '#E7E9EA')
+    .text('Global Internet Traffic (2013-2023)');
+  
+  // Subtitle
+  svg.append('text')
+    .attr('x', width / 2)
+    .attr('y', 52)
+    .attr('text-anchor', 'middle')
+    .style('font-size', '13px')
+    .style('fill', '#71767B')
+    .text('Percentage breakdown of human traffic, good bots, and bad bots');
+  
+  // Legend
+  const legend = svg.append('g')
+    .attr('transform', `translate(${width - 150}, 80)`);
+  
+  const legendData = [
+    { key: 'badBot', label: 'Bad Bots', color: colors.badBot },
+    { key: 'goodBot', label: 'Good Bots', color: colors.goodBot },
+    { key: 'human', label: 'Human', color: colors.human }
+  ];
+  
+  legendData.forEach((item, i) => {
+    const legendItem = legend.append('g')
+      .attr('transform', `translate(0, ${i * 22})`);
+    
+    legendItem.append('rect')
+      .attr('width', 14)
+      .attr('height', 14)
+      .attr('rx', 3)
+      .attr('fill', item.color);
+    
+    legendItem.append('text')
+      .attr('x', 20)
+      .attr('y', 11)
+      .style('font-size', '13px')
+      .style('fill', '#E7E9EA')
+      .text(item.label);
+  });
+}
+
+function getIndustryData() {
+  return [
+    { name: 'Gaming', human: 30.0, goodBot: 12.8, badBot: 57.2 },
+    { name: 'Telecom', human: 37.8, goodBot: 10.0, badBot: 52.2 },
+    { name: 'Financial services', human: 45.0, goodBot: 6.6, badBot: 48.4 },
+    { name: 'Government', human: 44.0, goodBot: 7.8, badBot: 48.2 },
+    { name: 'Law & government', human: 43.0, goodBot: 9.9, badBot: 47.1 },
+    { name: 'Retail', human: 49.4, goodBot: 8.6, badBot: 42.0 },
+    { name: 'Media', human: 38.0, goodBot: 20.5, badBot: 41.5 },
+    { name: 'Classifieds', human: 48.6, goodBot: 10.1, badBot: 41.3 },
+    { name: 'Entertainment', human: 51.3, goodBot: 9.0, badBot: 39.7 },
+    { name: 'Education', human: 52.5, goodBot: 8.0, badBot: 39.5 },
+    { name: 'Jobs/Career', human: 53.0, goodBot: 15.3, badBot: 31.7 },
+    { name: 'Consumer services', human: 55.0, goodBot: 13.5, badBot: 31.5 },
+    { name: 'Business services', human: 58.8, goodBot: 10.5, badBot: 30.7 },
+    { name: 'Travel', human: 58.8, goodBot: 12.8, badBot: 28.4 },
+    { name: 'Real estate', human: 63.4, goodBot: 11.2, badBot: 25.4 },
+    { name: 'Food & beverage', human: 64.0, goodBot: 11.4, badBot: 24.6 },
+    { name: 'Healthcare', human: 65.0, goodBot: 14.6, badBot: 20.4 },
+    { name: 'News/Media', human: 65.3, goodBot: 15.5, badBot: 19.2 },
+    { name: 'Marketing', human: 66.5, goodBot: 15.4, badBot: 18.1 }
+  ];
+}
+
+let selectedIndustry = null;
+
+function createIndustrySparklines() {
+  const container = d3.select('#industrySparklines');
+  container.selectAll('*').remove();
+  
+  const industries = getIndustryData();
+  industries.sort((a, b) => b.badBot - a.badBot);
+  
+  industries.forEach(industry => {
+    const item = container.append('div')
+      .attr('class', 'sparkline-item')
+      .on('click', () => {
+        if (selectedIndustry === industry.name) {
+          selectedIndustry = null;
+          clearIndustryOverlay();
+        } else {
+          selectedIndustry = industry.name;
+          showIndustryOnMainChart(industry);
+        }
+        updateSparklineStates();
+      })
+      .on('mouseenter', function() {
+        if (!selectedIndustry) {
+          highlightIndustryLevel(industry.badBot);
+        }
+      })
+      .on('mouseleave', function() {
+        if (!selectedIndustry) {
+          removeHighlight();
+        }
+      });
+    
+    // Industry name
+    item.append('div')
+      .attr('class', 'sparkline-name')
+      .text(industry.name);
+    
+    // Mini bar visualization
+    const vizContainer = item.append('div')
+      .attr('class', 'sparkline-viz');
+    
+    const svg = vizContainer.append('svg')
+      .attr('width', 80)
+      .attr('height', 30);
+    
+    const barWidth = 80;
+    const barHeight = 20;
+    
+    // Stacked mini bar
+    let xOffset = 0;
+    
+    // Bad bot
+    const badBotWidth = (industry.badBot / 100) * barWidth;
+    svg.append('rect')
+      .attr('x', xOffset)
+      .attr('y', 5)
+      .attr('width', badBotWidth)
+      .attr('height', barHeight)
+      .attr('fill', '#F4212E')
+      .attr('rx', 2);
+    xOffset += badBotWidth;
+    
+    // Good bot
+    const goodBotWidth = (industry.goodBot / 100) * barWidth;
+    svg.append('rect')
+      .attr('x', xOffset)
+      .attr('y', 5)
+      .attr('width', goodBotWidth)
+      .attr('height', barHeight)
+      .attr('fill', '#00BA7C')
+      .attr('rx', 2);
+    xOffset += goodBotWidth;
+    
+    // Human
+    const humanWidth = (industry.human / 100) * barWidth;
+    svg.append('rect')
+      .attr('x', xOffset)
+      .attr('y', 5)
+      .attr('width', humanWidth)
+      .attr('height', barHeight)
+      .attr('fill', '#1D9BF0')
+      .attr('rx', 2);
+    
+    // Value with color coding
+    const valueClass = industry.badBot > 45 ? 'high' : industry.badBot > 30 ? 'medium' : 'low';
+    item.append('div')
+      .attr('class', `sparkline-value ${valueClass}`)
+      .text(`${Math.round(industry.badBot)}%`);
+  });
+  
+  updateSparklineStates();
+}
+
+function updateSparklineStates() {
+  d3.selectAll('.sparkline-item')
+    .classed('active', function() {
+      const name = d3.select(this).select('.sparkline-name').text();
+      return name === selectedIndustry;
+    });
+}
+
+function highlightIndustryLevel(badBotPct) {
+  if (!window.mainChartG) return;
+  
+  const g = window.mainChartG;
+  const yScale = window.mainChartYScale;
+  const chartWidth = window.mainChartWidth;
+  
+  // Remove existing highlight
+  g.selectAll('.temp-highlight').remove();
+  
+  // Draw horizontal line at this industry's bad bot level
+  g.append('line')
+    .attr('class', 'temp-highlight')
+    .attr('x1', 0)
+    .attr('x2', chartWidth)
+    .attr('y1', yScale(100 - badBotPct))
+    .attr('y2', yScale(100 - badBotPct))
+    .attr('stroke', 'rgba(255, 215, 0, 0.6)')
+    .attr('stroke-width', 2)
+    .attr('stroke-dasharray', '5,3');
+  
+  // Add label
+  g.append('text')
+    .attr('class', 'temp-highlight')
+    .attr('x', chartWidth - 5)
+    .attr('y', yScale(100 - badBotPct) - 5)
+    .attr('text-anchor', 'end')
+    .attr('fill', '#ffd700')
+    .attr('font-size', '12px')
+    .attr('font-weight', 'bold')
+    .text(`${Math.round(badBotPct)}% bad bots`);
+}
+
+function removeHighlight() {
+  if (!window.mainChartG) return;
+  window.mainChartG.selectAll('.temp-highlight').remove();
+}
+
+function showIndustryOnMainChart(industry) {
+  const overlay = document.getElementById('industryOverlay');
+  const overlayLabel = document.getElementById('overlayIndustry');
+  
+  if (overlay && overlayLabel) {
+    overlayLabel.textContent = `${industry.name}: ${Math.round(industry.badBot)}% Bad Bots | ${Math.round(industry.goodBot)}% Good Bots | ${Math.round(industry.human)}% Human`;
+    overlay.classList.remove('hidden');
+  }
+  
+  if (!window.mainChartG) return;
+  
+  const g = window.mainChartG;
+  const yScale = window.mainChartYScale;
+  const xScale = window.mainChartXScale;
+  const chartWidth = window.mainChartWidth;
+  
+  // Clear previous industry overlays
+  g.selectAll('.industry-overlay-element').remove();
+  g.selectAll('.temp-highlight').remove();
+  
+  // Draw connection line across all years at industry's bad bot level
+  g.append('line')
+    .attr('class', 'industry-overlay-element connection-line')
+    .attr('x1', 0)
+    .attr('x2', chartWidth)
+    .attr('y1', yScale(100 - industry.badBot))
+    .attr('y2', yScale(100 - industry.badBot));
+  
+  // Add markers at each year point
+  const years = [2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023];
+  years.forEach((year, idx) => {
+    g.append('circle')
+      .attr('class', 'industry-overlay-element industry-marker')
+      .attr('cx', xScale(year))
+      .attr('cy', yScale(100 - industry.badBot))
+      .attr('r', 6)
+      .style('animation-delay', `${idx * 0.05}s`);
+  });
+  
+  // Add comparison text
+  const globalBadBot2023 = 50.4;
+  const difference = industry.badBot - globalBadBot2023;
+  const comparisonText = difference > 0 
+    ? `${Math.abs(difference).toFixed(1)}% above global average`
+    : `${Math.abs(difference).toFixed(1)}% below global average`;
+  
+  g.append('text')
+    .attr('class', 'industry-overlay-element')
+    .attr('x', chartWidth / 2)
+    .attr('y', yScale(100 - industry.badBot) - 15)
+    .attr('text-anchor', 'middle')
+    .attr('fill', '#ffd700')
+    .attr('font-size', '13px')
+    .attr('font-weight', 'bold')
+    .attr('opacity', 0)
+    .text(comparisonText)
+    .transition()
+    .duration(500)
+    .attr('opacity', 1);
+}
+
+function clearIndustryOverlay() {
+  const overlay = document.getElementById('industryOverlay');
+  if (overlay) {
+    overlay.classList.add('hidden');
+  }
+  
+  if (window.mainChartG) {
+    window.mainChartG.selectAll('.industry-overlay-element').remove();
+  }
+}
+
+// Setup clear button
+function setupClearButton() {
+  const clearBtn = document.getElementById('clearOverlay');
+  if (clearBtn) {
+    clearBtn.addEventListener('click', () => {
+      selectedIndustry = null;
+      clearIndustryOverlay();
+      updateSparklineStates();
+    });
+  }
+}
+
+function createInteractiveTimelineLegacy() {
+  const container = d3.select('#timelineChart');
+  container.selectAll('*').remove();
+  
+  const containerRect = container.node().getBoundingClientRect();
+  const width = containerRect.width;
+  const height = containerRect.height;
+  const margin = { top: 60, right: 80, bottom: 60, left: 60 };
+  
+  const svg = container.append('svg')
+    .attr('width', width)
+    .attr('height', height)
+    .attr('viewBox', `0 0 ${width} ${height}`)
+    .attr('preserveAspectRatio', 'xMidYMid meet')
+    .style('background', 'transparent')
+    .style('max-width', '100%')
+    .style('height', 'auto');
+  
+  const chartWidth = width - margin.left - margin.right;
+  const chartHeight = height - margin.top - margin.bottom;
+  
+  const g = svg.append('g')
+    .attr('transform', `translate(${margin.left}, ${margin.top})`);
+  
+  // Global data
+  const globalData = [
+    { year: 2013, human: 23.6, goodBot: 19.4, badBot: 57.0 },
+    { year: 2014, human: 22.8, goodBot: 36.3, badBot: 40.9 },
+    { year: 2015, human: 18.8, goodBot: 27.0, badBot: 54.4 },
+    { year: 2016, human: 19.9, goodBot: 18.8, badBot: 61.3 },
+    { year: 2017, human: 21.8, goodBot: 20.4, badBot: 57.8 },
+    { year: 2018, human: 20.4, goodBot: 17.5, badBot: 62.1 },
+    { year: 2019, human: 24.1, goodBot: 13.1, badBot: 62.8 },
+    { year: 2020, human: 25.8, goodBot: 15.2, badBot: 59.2 },
+    { year: 2021, human: 27.7, goodBot: 14.6, badBot: 57.7 },
+    { year: 2022, human: 30.2, goodBot: 17.3, badBot: 52.6 },
+    { year: 2023, human: 32.0, goodBot: 17.6, badBot: 50.4 }
+  ];
+  
+  // Scales
+  const xScale = d3.scaleLinear()
+    .domain([2013, 2023])
+    .range([0, chartWidth]);
+  
+  const yScale = d3.scaleLinear()
+    .domain([0, 100])
+    .range([chartHeight, 0]);
+  
+  // Colors matching dark theme aesthetic
+  const colors = {
+    human: '#1D9BF0',    // Twitter blue
+    goodBot: '#00BA7C',  // Green
+    badBot: '#F4212E'    // Red
+  };
+  
+  // Add title
+  const title = svg.append('text')
+    .attr('x', width / 2)
+    .attr('y', 20)
+    .attr('text-anchor', 'middle')
+    .style('font-size', '18px')
+    .style('font-weight', 'bold')
+    .style('fill', '#E7E9EA')
+    .text('Bot Traffic Evolution by Industry');
+  
+  // Add subtitle
+  svg.append('text')
+    .attr('x', width / 2)
+    .attr('y', 40)
+    .attr('text-anchor', 'middle')
+    .style('font-size', '13px')
+    .style('fill', '#71767B')
+    .text(selectedIndustries.length > 0 ? 'Industry bad bot % vs Global average' : 'Global average across all industries');
+  
+  // Draw stacked area for global data
+  const stackKeys = ['badBot', 'goodBot', 'human'];
+  const stackGenerator = d3.stack()
+    .keys(stackKeys)
+    .order(d3.stackOrderNone)
+    .offset(d3.stackOffsetNone);
+  
+  const series = stackGenerator(globalData);
+  
+  const areaGenerator = d3.area()
+    .x(d => xScale(d.data.year))
+    .y0(d => yScale(d[0]))
+    .y1(d => yScale(d[1]))
+    .curve(d3.curveMonotoneX);
+  
+  g.selectAll('.area')
+    .data(series)
+    .join('path')
+    .attr('class', 'area')
+    .attr('fill', d => colors[d.key])
+    .attr('d', areaGenerator)
+    .style('opacity', selectedIndustries.length > 0 ? 0.3 : 0.7);
+  
+  // Add axes
+  const xAxis = g.append('g')
+    .attr('transform', `translate(0, ${chartHeight})`)
+    .call(d3.axisBottom(xScale)
+      .tickFormat(d3.format('d'))
+      .tickValues(globalData.map(d => d.year)));
+  
+  xAxis.selectAll('text')
+    .style('font-size', '13px')
+    .style('fill', '#71767B');
+  
+  xAxis.selectAll('line')
+    .style('stroke', '#2F3336');
+  
+  xAxis.select('.domain')
+    .style('stroke', '#2F3336');
+  
+  const yAxis = g.append('g')
+    .call(d3.axisLeft(yScale)
+      .tickFormat(d => d + '%')
+      .tickValues([0, 25, 50, 75, 100]));
+  
+  yAxis.selectAll('text')
+    .style('font-size', '13px')
+    .style('fill', '#71767B');
+  
+  yAxis.selectAll('line')
+    .style('stroke', '#2F3336');
+  
+  yAxis.select('.domain')
+    .style('stroke', '#2F3336');
+  
+  // If industries selected, draw comparison lines for bad bot percentage
+  if (selectedIndustries.length > 0) {
+    const industryColors = ['#ffd700', '#ff6b6b', '#4ecdc4', '#95e1d3', '#ff9ff3'];
+    
+    selectedIndustries.forEach((industryName, idx) => {
+      const industry = getIndustryData().find(i => i.name === industryName);
+      if (!industry) return;
+      
+      // Create simulated trend based on 2023 value
+      const badBotPct = industry.badBot;
+      const industryTrend = globalData.map(d => ({
+        year: d.year,
+        value: badBotPct + (Math.random() - 0.5) * 8 // Add variation
+      }));
+      
+      const line = d3.line()
+        .x(d => xScale(d.year))
+        .y(d => yScale(d.value))
+        .curve(d3.curveMonotoneX);
+      
+      g.append('path')
+        .datum(industryTrend)
+        .attr('fill', 'none')
+        .attr('stroke', industryColors[idx % industryColors.length])
+        .attr('stroke-width', 3)
+        .attr('stroke-dasharray', '5,5')
+        .attr('d', line);
+      
+      // Add label at end
+      const lastPoint = industryTrend[industryTrend.length - 1];
+      g.append('text')
+        .attr('x', xScale(lastPoint.year) + 5)
+        .attr('y', yScale(lastPoint.value))
+        .attr('fill', industryColors[idx % industryColors.length])
+        .attr('font-size', '11px')
+        .attr('font-weight', 'bold')
+        .text(industryName);
+    });
+  }
+  
+  // Add legend with icons
+  const legend = svg.append('g')
+    .attr('transform', `translate(${width - 200}, 30)`);
+  
+  const legendData = [
+    { key: 'badBot', label: 'Bad Bot', color: colors.badBot },
+    { key: 'goodBot', label: 'Good Bot', color: colors.goodBot },
+    { key: 'human', label: 'Human', color: colors.human }
+  ];
+  
+  legend.selectAll('.legend-item')
+    .data(legendData)
+    .join('g')
+    .attr('class', 'legend-item')
+    .attr('transform', (d, i) => `translate(0, ${i * 20})`)
+    .each(function(item) {
+      const legendItem = d3.select(this);
+      
+      legendItem.append('rect')
+        .attr('x', 0)
+        .attr('y', -8)
+        .attr('width', 14)
+        .attr('height', 14)
+        .attr('rx', 3)
+        .attr('fill', item.color);
+      
+      legendItem.append('text')
+        .attr('x', 20)
+        .attr('y', 3)
+        .style('font-size', '13px')
+        .style('fill', '#E7E9EA')
+        .text(item.label);
+    });
+}
+
+function getIndustryData() {
+  return [
+    { name: 'Gaming', human: 30.0, goodBot: 12.8, badBot: 57.2 },
+    { name: 'Telecom', human: 37.8, goodBot: 10.0, badBot: 52.2 },
+    { name: 'Financial services', human: 45.0, goodBot: 6.6, badBot: 48.4 },
+    { name: 'Government', human: 44.0, goodBot: 7.8, badBot: 48.2 },
+    { name: 'Law & government', human: 43.0, goodBot: 9.9, badBot: 47.1 },
+    { name: 'Retail', human: 49.4, goodBot: 8.6, badBot: 42.0 },
+    { name: 'Media', human: 38.0, goodBot: 20.5, badBot: 41.5 },
+    { name: 'Classifieds', human: 48.6, goodBot: 10.1, badBot: 41.3 },
+    { name: 'Entertainment', human: 51.3, goodBot: 9.0, badBot: 39.7 },
+    { name: 'Education', human: 52.5, goodBot: 8.0, badBot: 39.5 },
+    { name: 'Jobs/Career', human: 53.0, goodBot: 15.3, badBot: 31.7 },
+    { name: 'Consumer services', human: 55.0, goodBot: 13.5, badBot: 31.5 },
+    { name: 'Business services', human: 58.8, goodBot: 10.5, badBot: 30.7 },
+    { name: 'Travel', human: 58.8, goodBot: 12.8, badBot: 28.4 },
+    { name: 'Real estate', human: 63.4, goodBot: 11.2, badBot: 25.4 },
+    { name: 'Food & beverage', human: 64.0, goodBot: 11.4, badBot: 24.6 },
+    { name: 'Healthcare', human: 65.0, goodBot: 14.6, badBot: 20.4 },
+    { name: 'News/Media', human: 65.3, goodBot: 15.5, badBot: 19.2 },
+    { name: 'Marketing', human: 66.5, goodBot: 15.4, badBot: 18.1 }
+  ];
+}
+
+function createIndustrySelectors() {
+  const container = d3.select('#industriesGrid');
+  if (!container.node()) return;
+  
+  container.selectAll('*').remove();
+  
+  const industries = getIndustryData();
+  
+  // Sort by bad bot percentage (highest first)
+  industries.sort((a, b) => b.badBot - a.badBot);
+  
+  const colors = {
+    human: '#1D9BF0',
+    goodBot: '#00BA7C',
+    badBot: '#F4212E'
+  };
+  
+  industries.forEach(industry => {
+    const isSelected = selectedIndustries.includes(industry.name);
+    
+    const item = container.append('div')
+      .attr('class', `industry-bar-item ${isSelected ? 'selected' : ''}`)
+      .on('click', () => {
+        const idx = selectedIndustries.indexOf(industry.name);
+        if (idx > -1) {
+          selectedIndustries.splice(idx, 1);
+        } else {
+          if (selectedIndustries.length < 5) {
+            selectedIndustries.push(industry.name);
+          }
+        }
+        createInteractiveTimeline();
+        createIndustrySelectors();
+        updateSelectionInfo();
+      });
+    
+    // Industry name
+    item.append('div')
+      .attr('class', 'industry-name')
+      .text(industry.name);
+    
+    // Stacked bar
+    const barContainer = item.append('div')
+      .attr('class', 'industry-bar-container');
+    
+    // Bad bot segment
+    barContainer.append('div')
+      .attr('class', 'bar-segment')
+      .style('width', `${industry.badBot}%`)
+      .style('background', colors.badBot)
+      .text(industry.badBot > 8 ? `${Math.round(industry.badBot)}%` : '');
+    
+    // Good bot segment
+    barContainer.append('div')
+      .attr('class', 'bar-segment')
+      .style('width', `${industry.goodBot}%`)
+      .style('background', colors.goodBot)
+      .text(industry.goodBot > 8 ? `${Math.round(industry.goodBot)}%` : '');
+    
+    // Human segment
+    barContainer.append('div')
+      .attr('class', 'bar-segment')
+      .style('width', `${industry.human}%`)
+      .style('background', colors.human)
+      .text(industry.human > 8 ? `${Math.round(industry.human)}%` : '');
+    
+    // Stats row
+    const stats = item.append('div')
+      .attr('class', 'industry-stats');
+    
+    stats.append('div')
+      .attr('class', 'stat-item')
+      .html(`<span class="stat-dot" style="background: ${colors.badBot}"></span>${Math.round(industry.badBot)}% Bad`);
+    
+    stats.append('div')
+      .attr('class', 'stat-item')
+      .html(`<span class="stat-dot" style="background: ${colors.goodBot}"></span>${Math.round(industry.goodBot)}% Good`);
+    
+    stats.append('div')
+      .attr('class', 'stat-item')
+      .html(`<span class="stat-dot" style="background: ${colors.human}"></span>${Math.round(industry.human)}% Human`);
+  });
+}
+
+// Industries view removed - focusing on timeline + countries interaction
+function createIndustriesViewLegacy() {
+  const container = d3.select('#industriesChart');
+  if (!container.node()) return;
+  
+  const industries = [
+    { name: 'Gaming', badBot: 57.2, goodBot: 3.3, human: 39.5 },
+    { name: 'Telecom & ISPs', badBot: 49.3, goodBot: 15.2, human: 35.6 },
+    { name: 'Computing & IT', badBot: 45.9, goodBot: 13.5, human: 40.6 },
+    { name: 'Travel', badBot: 44.5, goodBot: 4.4, human: 51.1 },
+    { name: 'Community & Society', badBot: 42.2, goodBot: 6.7, human: 51.1 },
+    { name: 'Business Services', badBot: 40.9, goodBot: 7.7, human: 51.4 },
+    { name: 'Healthcare', badBot: 33.4, goodBot: 6.8, human: 59.8 },
+    { name: 'News', badBot: 31.9, goodBot: 7.8, human: 60.3 },
+    { name: 'Entertainment', badBot: 31.1, goodBot: 55.4, human: 13.5 },
+    { name: 'Gambling', badBot: 30.8, goodBot: 1.8, human: 67.5 },
+    { name: 'Financial Services', badBot: 27.0, goodBot: 27.3, human: 45.7 },
+    { name: 'Retail', badBot: 25.8, goodBot: 20.4, human: 53.8 },
+    { name: 'Education', badBot: 23.9, goodBot: 9.6, human: 66.5 },
+    { name: 'Law & Government', badBot: 22.8, goodBot: 6.8, human: 70.4 },
+    { name: 'Lifestyle', badBot: 22.7, goodBot: 8.9, human: 68.4 },
+    { name: 'Sports', badBot: 21.4, goodBot: 6.5, human: 72.1 },
+    { name: 'Automotive', badBot: 21.3, goodBot: 13.5, human: 65.2 },
+    { name: 'Food & Groceries', badBot: 19.0, goodBot: 36.2, human: 44.9 },
+    { name: 'Marketing', badBot: 18.1, goodBot: 1.5, human: 80.4 }
+  ];
+  
+  const width = container.node().getBoundingClientRect().width - 40;
+  const height = industries.length * 35 + 60;
+  const margin = { top: 20, right: 80, bottom: 40, left: 180 };
+  
+  const svg = container.append('svg')
+    .attr('width', width)
+    .attr('height', height);
+  
+  const g = svg.append('g')
+    .attr('transform', `translate(${margin.left}, ${margin.top})`);
+  
+  const chartWidth = width - margin.left - margin.right;
+  const chartHeight = height - margin.top - margin.bottom;
+  
+  const xScale = d3.scaleLinear()
+    .domain([0, 100])
+    .range([0, chartWidth]);
+  
+  const yScale = d3.scaleBand()
+    .domain(industries.map(d => d.name))
+    .range([0, chartHeight])
+    .padding(0.2);
+  
+  const colors = {
+    badBot: '#F4212E',
+    goodBot: '#00BA7C',
+    human: '#1D9BF0'
+  };
+  
+  // Draw stacked bars
+  industries.forEach(industry => {
+    const row = g.append('g')
+      .attr('transform', `translate(0, ${yScale(industry.name)})`);
+    
+    let offset = 0;
+    
+    // Bad bot segment
+    row.append('rect')
+      .attr('x', xScale(offset))
+      .attr('y', 0)
+      .attr('width', xScale(industry.badBot))
+      .attr('height', yScale.bandwidth())
+      .attr('fill', colors.badBot);
+    
+    if (industry.badBot > 8) {
+      row.append('text')
+        .attr('x', xScale(offset + industry.badBot / 2))
+        .attr('y', yScale.bandwidth() / 2)
+        .attr('dy', '0.35em')
+        .attr('text-anchor', 'middle')
+        .style('fill', '#E7E9EA')
+        .style('font-size', '11px')
+        .style('font-weight', 'bold')
+        .text(`${industry.badBot}%`);
+    }
+    
+    offset += industry.badBot;
+    
+    // Good bot segment
+    row.append('rect')
+      .attr('x', xScale(offset))
+      .attr('y', 0)
+      .attr('width', xScale(industry.goodBot))
+      .attr('height', yScale.bandwidth())
+      .attr('fill', colors.goodBot);
+    
+    if (industry.goodBot > 8) {
+      row.append('text')
+        .attr('x', xScale(offset + industry.goodBot / 2))
+        .attr('y', yScale.bandwidth() / 2)
+        .attr('dy', '0.35em')
+        .attr('text-anchor', 'middle')
+        .style('fill', '#E7E9EA')
+        .style('font-size', '11px')
+        .style('font-weight', 'bold')
+        .text(`${industry.goodBot}%`);
+    }
+    
+    offset += industry.goodBot;
+    
+    // Human segment
+    row.append('rect')
+      .attr('x', xScale(offset))
+      .attr('y', 0)
+      .attr('width', xScale(industry.human))
+      .attr('height', yScale.bandwidth())
+      .attr('fill', colors.human);
+    
+    if (industry.human > 8) {
+      row.append('text')
+        .attr('x', xScale(offset + industry.human / 2))
+        .attr('y', yScale.bandwidth() / 2)
+        .attr('dy', '0.35em')
+        .attr('text-anchor', 'middle')
+        .style('fill', '#E7E9EA')
+        .style('font-size', '11px')
+        .style('font-weight', 'bold')
+        .text(`${industry.human}%`);
+    }
+  });
+  
+  // Y-axis labels
+  g.append('g')
+    .selectAll('text')
+    .data(industries)
+    .join('text')
+    .attr('x', -10)
+    .attr('y', d => yScale(d.name) + yScale.bandwidth() / 2)
+    .attr('dy', '0.35em')
+    .attr('text-anchor', 'end')
+    .style('fill', '#E7E9EA')
+    .style('font-size', '12px')
+    .text(d => d.name);
+  
+  // X-axis
+  const xAxis = g.append('g')
+    .attr('transform', `translate(0, ${chartHeight})`)
+    .call(d3.axisBottom(xScale).tickFormat(d => d + '%'));
+  
+  xAxis.selectAll('text')
+    .style('fill', '#71767B')
+    .style('font-size', '11px');
+  
+  xAxis.selectAll('line')
+    .style('stroke', '#2F3336');
+  
+  xAxis.select('.domain')
+    .style('stroke', '#2F3336');
+}
+
+
+
+
+
+// === INNOVATIVE BOT TRAFFIC VISUALIZATION ===
+
+function initializeBotTrafficVisualization() {
+  const container = d3.select('#botEcosystemViz');
+  if (!container.node()) return;
+  
+  container.selectAll('*').remove();
+  const width = container.node().clientWidth;
+  const height = container.node().clientHeight;
+  
+  // Data from the attached chart (2013-2023)
+  const data = [
+    { year: 2013, human: 23.6, goodBot: 19.4, badBot: 57.0 },
+    { year: 2014, human: 22.8, goodBot: 36.3, badBot: 40.9 },
+    { year: 2015, human: 18.6, goodBot: 27.0, badBot: 54.4 },
+    { year: 2016, human: 19.9, goodBot: 18.8, badBot: 61.3 },
+    { year: 2017, human: 21.8, goodBot: 20.4, badBot: 57.8 },
+    { year: 2018, human: 20.4, goodBot: 17.5, badBot: 62.1 },
+    { year: 2019, human: 24.1, goodBot: 13.1, badBot: 62.8 },
+    { year: 2020, human: 25.6, goodBot: 15.2, badBot: 59.2 },
+    { year: 2021, human: 27.7, goodBot: 14.6, badBot: 57.7 },
+    { year: 2022, human: 30.2, goodBot: 17.3, badBot: 52.6 },
+    { year: 2023, human: 32.0, goodBot: 17.6, badBot: 50.4 }
+  ];
+  
+  const svg = container.append('svg')
+    .attr('width', width)
+    .attr('height', height);
+    
+  // Create interactive bubbles visualization
+  createInteractiveBubbles(svg, data, width, height);
+  
+  // Create time slider
+  createTimeSlider(svg, data, width, height);
+  
+  // Update other visualizations
+  updateDNAVisualization(data[data.length - 1]);
+  updateRadarVisualization(data[data.length - 1]);
+  updateSwarmVisualization(data[data.length - 1]);
+  updateTrafficFlow(data[data.length - 1]);
+}
+
+function createInteractiveBubbles(svg, data, width, height) {
+  const currentYear = 2023;
+  const currentData = data.find(d => d.year === currentYear);
+  
+  // Create bubble data
+  const bubbleData = [
+    { 
+      type: 'human', 
+      value: currentData.human, 
+      color: '#3b82f6',
+      label: 'Human Traffic',
+      x: width * 0.3,
+      y: height * 0.5
+    },
+    { 
+      type: 'goodBot', 
+      value: currentData.goodBot, 
+      color: '#10b981',
+      label: 'Good Bots',
+      x: width * 0.6,
+      y: height * 0.3
+    },
+    { 
+      type: 'badBot', 
+      value: currentData.badBot, 
+      color: '#ef4444',
+      label: 'Bad Bots',
+      x: width * 0.6,
+      y: height * 0.7
+    }
+  ];
+  
+  // Create force simulation
+  const simulation = d3.forceSimulation(bubbleData)
+    .force('charge', d3.forceManyBody().strength(-1000))
+    .force('center', d3.forceCenter(width/2, height/2))
+    .force('collision', d3.forceCollide().radius(d => Math.sqrt(d.value) * 3 + 20));
+  
+  // Create bubbles
+  const bubbles = svg.selectAll('.traffic-bubble')
+    .data(bubbleData)
+    .join('circle')
+    .attr('class', 'traffic-bubble')
+    .attr('r', d => Math.sqrt(d.value) * 3 + 10)
+    .attr('fill', d => d.color)
+    .attr('stroke', '#ffffff')
+    .attr('stroke-width', 3)
+    .attr('opacity', 0.8)
+    .style('cursor', 'pointer')
+    .style('filter', 'drop-shadow(0 0 10px rgba(255,255,255,0.3))');
+  
+  // Add labels
+  const labels = svg.selectAll('.bubble-label')
+    .data(bubbleData)
+    .join('text')
+    .attr('class', 'bubble-label')
+    .attr('text-anchor', 'middle')
+    .attr('font-size', '14px')
+    .attr('font-weight', 'bold')
+    .attr('fill', '#ffffff')
+    .attr('dy', -5)
+    .text(d => d.label);
+    
+  // Add percentage labels
+  const percentages = svg.selectAll('.bubble-percentage')
+    .data(bubbleData)
+    .join('text')
+    .attr('class', 'bubble-percentage')
+    .attr('text-anchor', 'middle')
+    .attr('font-size', '18px')
+    .attr('font-weight', 'bold')
+    .attr('fill', '#ffffff')
+    .attr('dy', 15)
+    .text(d => `${d.value}%`);
+  
+  // Animation and interaction
+  simulation.on('tick', () => {
+    bubbles
+      .attr('cx', d => d.x)
+      .attr('cy', d => d.y);
+      
+    labels
+      .attr('x', d => d.x)
+      .attr('y', d => d.y);
+      
+    percentages
+      .attr('x', d => d.x)
+      .attr('y', d => d.y);
+  });
+  
+  // Bubble interactions
+  bubbles
+    .on('mouseover', function(event, d) {
+      d3.select(this)
+        .transition()
+        .duration(200)
+        .attr('r', d => Math.sqrt(d.value) * 3 + 15)
+        .style('filter', 'drop-shadow(0 0 20px rgba(255,255,255,0.6))');
+        
+      // Highlight related elements
+      highlightTrafficType(d.type);
+    })
+    .on('mouseout', function(event, d) {
+      d3.select(this)
+        .transition()
+        .duration(200)
+        .attr('r', d => Math.sqrt(d.value) * 3 + 10)
+        .style('filter', 'drop-shadow(0 0 10px rgba(255,255,255,0.3))');
+        
+      resetHighlights();
+    })
+    .on('click', function(event, d) {
+      // Show detailed trend for this type
+      showTrendModal(d.type, data);
+    });
+  
+  return { bubbles, labels, percentages, simulation };
+}
+
+function createTimeSlider(svg, data, width, height) {
+  const sliderGroup = svg.append('g')
+    .attr('transform', `translate(50, ${height - 60})`);
+    
+  const sliderWidth = width - 100;
+  const years = data.map(d => d.year);
+  
+  // Slider track
+  sliderGroup.append('line')
+    .attr('x1', 0)
+    .attr('x2', sliderWidth)
+    .attr('y1', 20)
+    .attr('y2', 20)
+    .attr('stroke', '#4b5563')
+    .attr('stroke-width', 4);
+  
+  // Year markers
+  const yearScale = d3.scaleLinear()
+    .domain(d3.extent(years))
+    .range([0, sliderWidth]);
+  
+  const yearMarkers = sliderGroup.selectAll('.year-marker')
+    .data(years)
+    .join('circle')
+    .attr('class', 'year-marker')
+    .attr('cx', d => yearScale(d))
+    .attr('cy', 20)
+    .attr('r', 6)
+    .attr('fill', '#6b7280')
+    .attr('stroke', '#ffffff')
+    .attr('stroke-width', 2)
+    .style('cursor', 'pointer');
+  
+  // Year labels
+  sliderGroup.selectAll('.year-label')
+    .data(years.filter((d, i) => i % 2 === 0)) // Show every other year
+    .join('text')
+    .attr('class', 'year-label')
+    .attr('x', d => yearScale(d))
+    .attr('y', 40)
+    .attr('text-anchor', 'middle')
+    .attr('font-size', '10px')
+    .attr('fill', '#9ca3af')
+    .text(d => d);
+  
+  // Current year indicator
+  let currentYearIndicator = sliderGroup.append('circle')
+    .attr('class', 'current-year')
+    .attr('cx', yearScale(2023))
+    .attr('cy', 20)
+    .attr('r', 8)
+    .attr('fill', '#3b82f6')
+    .attr('stroke', '#ffffff')
+    .attr('stroke-width', 3);
+  
+  // Year markers interaction
+  yearMarkers.on('click', function(event, year) {
+    // Update current year indicator
+    currentYearIndicator
+      .transition()
+      .duration(300)
+      .attr('cx', yearScale(year));
+    
+    // Update all visualizations for this year
+    updateVisualizationsForYear(year, data);
+    
+    // Highlight clicked marker
+    yearMarkers.attr('fill', '#6b7280');
+    d3.select(this).attr('fill', '#3b82f6');
+  });
+}
+
+function updateVisualizationsForYear(year, data) {
+  const yearData = data.find(d => d.year === year);
+  
+  // Update main bubbles
+  const bubbles = d3.selectAll('.traffic-bubble');
+  const percentages = d3.selectAll('.bubble-percentage');
+  
+  bubbles
+    .data([
+      { type: 'human', value: yearData.human, color: '#3b82f6' },
+      { type: 'goodBot', value: yearData.goodBot, color: '#10b981' },
+      { type: 'badBot', value: yearData.badBot, color: '#ef4444' }
+    ])
+    .transition()
+    .duration(500)
+    .attr('r', d => Math.sqrt(d.value) * 3 + 10);
+    
+  percentages
+    .data([
+      { type: 'human', value: yearData.human },
+      { type: 'goodBot', value: yearData.goodBot },
+      { type: 'badBot', value: yearData.badBot }
+    ])
+    .transition()
+    .duration(500)
+    .text(d => `${d.value}%`);
+  
+  // Update other visualizations
+  updateDNAVisualization(yearData);
+  updateRadarVisualization(yearData);
+  updateSwarmVisualization(yearData);
+  updateTrafficFlow(yearData);
+}
+
+function setupTimelineControls() {
+  const timelineButtons = document.querySelectorAll('.timeline-btn');
+  
+  timelineButtons.forEach(button => {
+    button.addEventListener('click', function() {
+      // Remove active class from all buttons
+      timelineButtons.forEach(btn => btn.classList.remove('active'));
+      
+      // Add active class to clicked button
+      this.classList.add('active');
+      
+      // Render appropriate visualization
+      const view = this.getAttribute('data-view');
+      
+      if (view === 'sophistication') {
+        renderSophisticationTimeline();
+      } else {
+        renderBotTimeline(view);
+      }
+    });
+  });
+}
+
+function renderBotTimeline(view) {
+  const container = document.getElementById('botTimelineViz');
+  if (!container) return;
+
+  // Clear previous chart
+  d3.select(container).selectAll("*").remove();
+
+  const data = view === 'yearly' ? botTrafficData.yearly : botTrafficData.monthly2023;
+  
+  const margin = { top: 20, right: 120, bottom: 40, left: 60 };
+  const width = container.clientWidth - margin.left - margin.right;
+  const height = 360 - margin.top - margin.bottom;
+
+  const svg = d3.select(container)
+    .append('svg')
+    .attr('width', width + margin.left + margin.right)
+    .attr('height', height + margin.top + margin.bottom);
+
+  const g = svg.append('g')
+    .attr('transform', `translate(${margin.left},${margin.top})`);
+
+  // Scales
+  const xScale = d3.scaleBand()
+    .domain(data.map(d => view === 'yearly' ? d.year : d.month))
+    .range([0, width])
+    .padding(0.1);
+
+  const yScale = d3.scaleLinear()
+    .domain([0, 100])
+    .range([height, 0]);
+
+  // Colors
+  const colors = {
+    badBot: '#ef4444',
+    goodBot: '#10b981',
+    human: '#3b82f6'
+  };
+
+  // Create stacked data
+  const stackedData = data.map(d => {
+    return {
+      period: view === 'yearly' ? d.year : d.month,
+      badBot: d.badBot,
+      goodBot: d.badBot + d.goodBot,
+      human: d.badBot + d.goodBot + d.human
+    };
+  });
+
+  // Draw bars
+  data.forEach((d, i) => {
+    const x = xScale(view === 'yearly' ? d.year : d.month);
+    const barWidth = xScale.bandwidth();
+
+    // Bad bot bar (bottom)
+    g.append('rect')
+      .attr('x', x)
+      .attr('y', yScale(d.badBot))
+      .attr('width', barWidth)
+      .attr('height', height - yScale(d.badBot))
+      .attr('fill', colors.badBot)
+      .attr('opacity', 0.8);
+
+    // Good bot bar (middle)
+    g.append('rect')
+      .attr('x', x)
+      .attr('y', yScale(d.badBot + d.goodBot))
+      .attr('width', barWidth)
+      .attr('height', yScale(d.badBot) - yScale(d.badBot + d.goodBot))
+      .attr('fill', colors.goodBot)
+      .attr('opacity', 0.8);
+
+    // Human bar (top)
+    g.append('rect')
+      .attr('x', x)
+      .attr('y', yScale(100))
+      .attr('width', barWidth)
+      .attr('height', yScale(d.badBot + d.goodBot) - yScale(100))
+      .attr('fill', colors.human)
+      .attr('opacity', 0.8);
+  });
+
+  // X axis
+  g.append('g')
+    .attr('transform', `translate(0,${height})`)
+    .call(d3.axisBottom(xScale))
+    .selectAll('text')
+    .style('fill', '#9CA3AF')
+    .style('font-size', '12px');
+
+  // Y axis
+  g.append('g')
+    .call(d3.axisLeft(yScale).tickFormat(d => d + '%'))
+    .selectAll('text')
+    .style('fill', '#9CA3AF')
+    .style('font-size', '12px');
+
+  // Legend
+  const legend = svg.append('g')
+    .attr('transform', `translate(${width + margin.left + 20}, ${margin.top + 20})`);
+
+  const legendData = [
+    { label: 'Human Traffic', color: colors.human },
+    { label: 'Good Bots', color: colors.goodBot },
+    { label: 'Bad Bots', color: colors.badBot }
+  ];
+
+  legend.selectAll('.legend-item')
+    .data(legendData)
+    .enter()
+    .append('g')
+    .attr('class', 'legend-item')
+    .attr('transform', (d, i) => `translate(0, ${i * 25})`)
+    .each(function(d) {
+      const item = d3.select(this);
+      
+      item.append('rect')
+        .attr('width', 15)
+        .attr('height', 15)
+        .attr('fill', d.color);
+      
+      item.append('text')
+        .attr('x', 20)
+        .attr('y', 12)
+        .text(d.label)
+        .style('fill', '#E7E9EA')
+        .style('font-size', '12px');
+    });
+
+  // Update insight cards with latest data
+  updateInsightCards(data[data.length - 1]);
+}
+
+function renderSophisticationChart() {
+  const container = document.getElementById('sophisticationDonut');
+  if (!container) return;
+
+  // Clear previous chart
+  d3.select(container).selectAll("*").remove();
+
+  const width = 300;
+  const height = 300;
+  const radius = Math.min(width, height) / 2 - 10;
+
+  const svg = d3.select(container)
+    .append('svg')
+    .attr('width', width)
+    .attr('height', height);
+
+  const g = svg.append('g')
+    .attr('transform', `translate(${width / 2}, ${height / 2})`);
+
+  const pie = d3.pie()
+    .value(d => d.value)
+    .sort(null);
+
+  const arc = d3.arc()
+    .innerRadius(radius * 0.5)
+    .outerRadius(radius);
+
+  const data = botTrafficData.sophistication;
+
+  const arcs = g.selectAll('.arc')
+    .data(pie(data))
+    .enter()
+    .append('g')
+    .attr('class', 'arc');
+
+  arcs.append('path')
+    .attr('d', arc)
+    .attr('fill', d => d.data.color)
+    .attr('stroke', '#1F2937')
+    .attr('stroke-width', 2)
+    .style('opacity', 0)
+    .transition()
+    .duration(1000)
+    .delay((d, i) => i * 200)
+    .style('opacity', 0.8);
+
+  // Add center text
+  g.append('text')
+    .attr('text-anchor', 'middle')
+    .attr('dy', '-0.5em')
+    .style('fill', '#E7E9EA')
+    .style('font-size', '16px')
+    .style('font-weight', 'bold')
+    .text('Bad Bots');
+
+  g.append('text')
+    .attr('text-anchor', 'middle')
+    .attr('dy', '1em')
+    .style('fill', '#9CA3AF')
+    .style('font-size', '14px')
+    .text('by Sophistication');
+}
+
+function renderIndustryHeatmap() {
+  const container = document.getElementById('industryHeatmap');
+  if (!container) return;
+
+  // Clear previous content
+  d3.select(container).selectAll("*").remove();
+
+  const margin = { top: 20, right: 20, bottom: 60, left: 120 };
+  const width = container.clientWidth - margin.left - margin.right;
+  const height = 360 - margin.top - margin.bottom;
+
+  const svg = d3.select(container)
+    .append('svg')
+    .attr('width', width + margin.left + margin.right)
+    .attr('height', height + margin.top + margin.bottom);
+
+  const g = svg.append('g')
+    .attr('transform', `translate(${margin.left},${margin.top})`);
+
+  // Scales
+  const yScale = d3.scaleBand()
+    .domain(industryData.map(d => d.industry))
+    .range([0, height])
+    .padding(0.1);
+
+  const colorScale = d3.scaleSequential()
+    .interpolator(d3.interpolateReds)
+    .domain([0, d3.max(industryData, d => d.badBotPercent)]);
+
+  // Create tooltip
+  const tooltip = d3.select('body').append('div')
+    .attr('class', 'chart-tooltip')
+    .style('opacity', 0)
+    .style('position', 'absolute')
+    .style('background', 'rgba(15, 23, 42, 0.96)')
+    .style('color', '#E7E9EA')
+    .style('padding', '10px')
+    .style('border-radius', '8px')
+    .style('border', '1px solid rgba(148, 163, 184, 0.5)')
+    .style('font-size', '12px')
+    .style('pointer-events', 'none')
+    .style('z-index', '9999');
+
+  // Draw bars
+  g.selectAll('.industry-bar')
+    .data(industryData)
+    .enter()
+    .append('rect')
+    .attr('class', 'industry-bar')
+    .attr('x', 0)
+    .attr('y', d => yScale(d.industry))
+    .attr('width', width)
+    .attr('height', yScale.bandwidth())
+    .attr('fill', d => colorScale(d.badBotPercent))
+    .attr('stroke', '#1F2937')
+    .attr('stroke-width', 1)
+    .style('cursor', 'pointer')
+    .on('mouseover', function(event, d) {
+      d3.select(this)
+        .attr('stroke', '#fbbf24')
+        .attr('stroke-width', 2);
+
+      tooltip.transition()
+        .duration(200)
+        .style('opacity', .9);
+
+      tooltip.html(`
+        <strong>${d.industry}</strong><br/>
+        Bad Bots: <span style="color: #ef4444">${d.badBotPercent}%</span><br/>
+        Good Bots: <span style="color: #10b981">${d.goodBotPercent}%</span><br/>
+        Human Traffic: <span style="color: #3b82f6">${d.humanPercent}%</span>
+      `)
+        .style('left', (event.pageX + 10) + 'px')
+        .style('top', (event.pageY - 10) + 'px');
+    })
+    .on('mouseout', function() {
+      d3.select(this)
+        .attr('stroke', '#1F2937')
+        .attr('stroke-width', 1);
+
+      tooltip.transition()
+        .duration(500)
+        .style('opacity', 0);
+    });
+
+  // Add labels
+  g.selectAll('.industry-label')
+    .data(industryData)
+    .enter()
+    .append('text')
+    .attr('class', 'industry-label')
+    .attr('x', -10)
+    .attr('y', d => yScale(d.industry) + yScale.bandwidth() / 2)
+    .attr('dy', '0.35em')
+    .attr('text-anchor', 'end')
+    .style('fill', '#E7E9EA')
+    .style('font-size', '11px')
+    .text(d => d.industry);
+
+  // Add percentage labels on bars
+  g.selectAll('.percentage-label')
+    .data(industryData)
+    .enter()
+    .append('text')
+    .attr('class', 'percentage-label')
+    .attr('x', 10)
+    .attr('y', d => yScale(d.industry) + yScale.bandwidth() / 2)
+    .attr('dy', '0.35em')
+    .style('fill', '#FFFFFF')
+    .style('font-size', '11px')
+    .style('font-weight', 'bold')
+    .text(d => d.badBotPercent + '%');
+}
+
+function initializeDetectionGame() {
+  loadSignature();
+  setupDetectionGameHandlers();
+}
+
+function setupDetectionGameHandlers() {
+  const detectionButtons = document.querySelectorAll('.detection-btn');
+  const nextButton = document.getElementById('nextSignature');
+
+  detectionButtons.forEach(button => {
+    button.addEventListener('click', function() {
+      const choice = this.getAttribute('data-choice');
+      checkAnswer(choice);
+    });
+  });
+
+  if (nextButton) {
+    nextButton.addEventListener('click', function() {
+      currentSignatureIndex = (currentSignatureIndex + 1) % trafficSignatures.length;
+      loadSignature();
+    });
+  }
+}
+
+function loadSignature() {
+  const signature = trafficSignatures[currentSignatureIndex];
+  
+  // Update metrics
+  document.getElementById('requestRate').textContent = signature.requestRate;
+  document.getElementById('userAgent').textContent = signature.userAgent;
+  document.getElementById('sessionDuration').textContent = signature.sessionDuration;
+  document.getElementById('mouseMovement').textContent = signature.mouseMovement;
+
+  // Reset buttons
+  const detectionButtons = document.querySelectorAll('.detection-btn');
+  detectionButtons.forEach(button => {
+    button.classList.remove('correct', 'incorrect');
+    button.disabled = false;
+  });
+
+  // Hide feedback and next button
+  const feedback = document.getElementById('detectionFeedback');
+  const nextButton = document.getElementById('nextSignature');
+  
+  if (feedback) feedback.style.display = 'none';
+  if (nextButton) nextButton.style.display = 'none';
+}
+
+function checkAnswer(choice) {
+  const signature = trafficSignatures[currentSignatureIndex];
+  const isCorrect = choice === signature.type;
+  const feedback = document.getElementById('detectionFeedback');
+  const nextButton = document.getElementById('nextSignature');
+  const scoreElement = document.getElementById('detectionScore');
+
+  // Disable all buttons
+  const detectionButtons = document.querySelectorAll('.detection-btn');
+  detectionButtons.forEach(button => {
+    button.disabled = true;
+    
+    const buttonChoice = button.getAttribute('data-choice');
+    if (buttonChoice === signature.type) {
+      button.classList.add('correct');
+    } else if (buttonChoice === choice && !isCorrect) {
+      button.classList.add('incorrect');
+    }
+  });
+
+  // Update score
+  if (isCorrect) {
+    detectionScore++;
+    if (scoreElement) {
+      scoreElement.textContent = detectionScore;
+    }
+  }
+
+  // Show feedback
+  if (feedback) {
+    feedback.style.display = 'block';
+    feedback.className = `detection-feedback ${isCorrect ? 'correct' : 'incorrect'}`;
+    feedback.innerHTML = `
+      <strong>${isCorrect ? 'Correct!' : 'Incorrect'}</strong><br/>
+      ${signature.explanation}
+    `;
+  }
+
+  // Show next button
+  if (nextButton) {
+    nextButton.style.display = 'block';
+  }
+}
+
+function updateInsightCards(latestData) {
+  // Update the insight cards with the latest data
+  const goodBotElement = document.getElementById('goodBotPercent');
+  const badBotElement = document.getElementById('badBotPercent');
+  const humanElement = document.getElementById('humanPercent');
+
+  if (goodBotElement) goodBotElement.textContent = latestData.goodBot.toFixed(1) + '%';
+  if (badBotElement) badBotElement.textContent = latestData.badBot.toFixed(1) + '%';
+  if (humanElement) humanElement.textContent = latestData.human.toFixed(1) + '%';
+}
+
+function renderSophisticationTimeline() {
+  // This would show how sophistication levels have changed over time
+  // For now, we'll just show the current breakdown
+  renderSophisticationChart();
+}
+
+// === INNOVATIVE BOT VISUALIZATION FUNCTIONS ===
+
+// Global state for cross-chart interactions
+let globalBotState = {
+  selectedNode: null,
+  filterType: 'all', // 'all', 'good', 'bad', 'human'
+  activeIndustry: null,
+  swarmMode: 'normal', // 'normal', 'attack', 'defense'
+  timeScale: 1
+};
+
+// Cross-chart event system
+const chartEvents = {
+  listeners: {},
+  emit: function(event, data) {
+    if (this.listeners[event]) {
+      this.listeners[event].forEach(callback => callback(data));
+    }
+  },
+  on: function(event, callback) {
+    if (!this.listeners[event]) this.listeners[event] = [];
+    this.listeners[event].push(callback);
+  }
+};
+
+function initializeBotEcosystemMap() {
+  const container = d3.select('#botEcosystemViz');
+  if (!container.node()) return;
+  
+  container.selectAll('*').remove(); // Clear existing content
+  const width = container.node().clientWidth;
+  const height = container.node().clientHeight;
+  
+  const svg = container.append('svg')
+    .attr('width', width)
+    .attr('height', height)
+    .style('background', 'radial-gradient(circle at center, rgba(29, 155, 240, 0.1), transparent)');
+  
+  // Enhanced nodes with more detailed data
+  const nodes = [
+    { id: 'human', type: 'human', name: 'Human Traffic', value: 32.0, x: width/2, y: height/2, threat: 0 },
+    { id: 'good-bot', type: 'good', name: 'Good Bots', value: 17.6, x: width*0.3, y: height*0.3, threat: 0.1 },
+    { id: 'bad-bot', type: 'bad', name: 'Bad Bots', value: 50.4, x: width*0.7, y: height*0.3, threat: 0.9 },
+    { id: 'search', type: 'good', name: 'Search Crawlers', value: 8.2, x: width*0.2, y: height*0.5, threat: 0.0 },
+    { id: 'social', type: 'good', name: 'Social Bots', value: 5.1, x: width*0.1, y: height*0.7, threat: 0.2 },
+    { id: 'monitoring', type: 'good', name: 'Monitoring', value: 4.3, x: width*0.4, y: height*0.1, threat: 0.0 },
+    { id: 'scrapers', type: 'bad', name: 'Data Scrapers', value: 18.7, x: width*0.8, y: height*0.2, threat: 0.7 },
+    { id: 'ddos', type: 'bad', name: 'DDoS Bots', value: 12.1, x: width*0.9, y: height*0.5, threat: 0.95 },
+    { id: 'fraud', type: 'bad', name: 'Click Fraud', value: 10.8, x: width*0.7, y: height*0.8, threat: 0.8 },
+    { id: 'spam', type: 'bad', name: 'Spam Bots', value: 8.8, x: width*0.6, y: height*0.6, threat: 0.6 }
+  ];
+  
+  const links = [
+    { source: 'human', target: 'good-bot', strength: 0.3, flow: 'positive' },
+    { source: 'human', target: 'bad-bot', strength: 0.8, flow: 'attack' },
+    { source: 'good-bot', target: 'search', strength: 0.8, flow: 'support' },
+    { source: 'good-bot', target: 'social', strength: 0.6, flow: 'support' },
+    { source: 'good-bot', target: 'monitoring', strength: 0.4, flow: 'support' },
+    { source: 'bad-bot', target: 'scrapers', strength: 0.9, flow: 'attack' },
+    { source: 'bad-bot', target: 'ddos', strength: 0.7, flow: 'attack' },
+    { source: 'bad-bot', target: 'fraud', strength: 0.6, flow: 'attack' },
+    { source: 'bad-bot', target: 'spam', strength: 0.5, flow: 'attack' },
+    { source: 'scrapers', target: 'fraud', strength: 0.4, flow: 'collaborate' }
+  ];
+  
+  // Create force simulation with enhanced physics
+  const simulation = d3.forceSimulation(nodes)
+    .force('link', d3.forceLink(links).id(d => d.id).strength(d => d.strength * 0.5))
+    .force('charge', d3.forceManyBody().strength(-400).distanceMax(200))
+    .force('center', d3.forceCenter(width/2, height/2))
+    .force('collision', d3.forceCollide().radius(d => Math.sqrt(d.value) * 3 + 10));
+  
+  // Add gradient definitions
+  const defs = svg.append('defs');
+  
+  // Create animated gradients for links
+  const gradients = ['attack', 'support', 'collaborate', 'positive'].map(type => {
+    const gradient = defs.append('linearGradient')
+      .attr('id', `gradient-${type}`)
+      .attr('gradientUnits', 'userSpaceOnUse');
+    
+    gradient.append('stop')
+      .attr('offset', '0%')
+      .attr('stop-color', type === 'attack' ? '#ef4444' : type === 'support' ? '#10b981' : '#3b82f6')
+      .attr('stop-opacity', 0.8);
+      
+    gradient.append('stop')
+      .attr('offset', '100%')
+      .attr('stop-color', type === 'attack' ? '#dc2626' : type === 'support' ? '#059669' : '#2563eb')
+      .attr('stop-opacity', 0.3);
+      
+    return gradient;
+  });
+  
+  // Add pulsing effect background
+  const pulseCircle = svg.append('circle')
+    .attr('cx', width/2)
+    .attr('cy', height/2)
+    .attr('r', 0)
+    .attr('fill', 'none')
+    .attr('stroke', '#1d9bf0')
+    .attr('stroke-width', 2)
+    .attr('opacity', 0);
+  
+  function pulse() {
+    pulseCircle
+      .attr('r', 0)
+      .attr('opacity', 0.6)
+      .transition()
+      .duration(2000)
+      .attr('r', Math.min(width, height) / 3)
+      .attr('opacity', 0)
+      .on('end', pulse);
+  }
+  pulse();
+  
+  // Enhanced links with animation
+  const link = svg.append('g')
+    .selectAll('line')
+    .data(links)
+    .join('line')
+    .attr('stroke', d => `url(#gradient-${d.flow})`)
+    .attr('stroke-width', d => Math.sqrt(d.strength) * 4)
+    .attr('opacity', 0.7)
+    .style('filter', 'drop-shadow(0 0 3px rgba(255,255,255,0.3))');
+  
+  // Animated flow particles on links
+  const linkParticles = svg.append('g')
+    .selectAll('.link-particle')
+    .data(links)
+    .join('circle')
+    .attr('class', 'link-particle')
+    .attr('r', 3)
+    .attr('fill', d => d.flow === 'attack' ? '#ef4444' : '#10b981')
+    .attr('opacity', 0.8);
+  
+  function animateLinkParticles() {
+    linkParticles
+      .attr('cx', d => d.source.x)
+      .attr('cy', d => d.source.y)
+      .transition()
+      .duration(2000)
+      .ease(d3.easeLinear)
+      .attr('cx', d => d.target.x)
+      .attr('cy', d => d.target.y)
+      .on('end', animateLinkParticles);
+  }
+  animateLinkParticles();
+  
+  // Update other visualizations
+  updateDNAVisualization(data[data.length - 1]);
+  updateRadarVisualization(data[data.length - 1]);
+  updateSwarmVisualization(data[data.length - 1]);
+  updateTrafficFlow(data[data.length - 1]);
+}
+
+// Helper functions for the other visualizations
+function updateDNAVisualization(yearData) {
+  // Update DNA stats
+  const evasiveEl = document.getElementById('evasiveStat');
+  const advancedEl = document.getElementById('advancedStat');
+  const moderateEl = document.getElementById('moderateStat');
+  
+  if (evasiveEl) evasiveEl.innerHTML = `${yearData.badBot}%<span>Evasive</span>`;
+  if (advancedEl) advancedEl.innerHTML = `${yearData.goodBot}%<span>Advanced</span>`;
+  if (moderateEl) moderateEl.innerHTML = `${yearData.human}%<span>Moderate</span>`;
+  
+  // Create simple DNA helix visualization
+  const container = d3.select('#botDNAViz');
+  if (!container.node()) return;
+  
+  container.selectAll('*').remove();
+  const width = container.node().clientWidth;
+  const height = container.node().clientHeight;
+  
+  const svg = container.append('svg')
+    .attr('width', width)
+    .attr('height', height);
+  
+  // Create animated DNA strands
+  const centerX = width / 2;
+  const amplitude = width / 6;
+  const points = 20;
+  
+  for (let i = 0; i < points; i++) {
+    const y = (i / points) * height;
+    const angle = (i / points) * Math.PI * 4;
+    
+    svg.append('circle')
+      .attr('cx', centerX + amplitude * Math.cos(angle))
+      .attr('cy', y)
+      .attr('r', 3)
+      .attr('fill', i % 3 === 0 ? '#ef4444' : i % 3 === 1 ? '#10b981' : '#3b82f6')
+      .attr('opacity', 0.8)
+      .transition()
+      .duration(2000)
+      .delay(i * 100)
+      .attr('r', 5)
+      .transition()
+      .duration(2000)
+      .attr('r', 3);
+  }
+}
+
+function updateRadarVisualization(yearData) {
+  const container = d3.select('#industryRadarViz');
+  if (!container.node()) return;
+  
+  container.selectAll('*').remove();
+  const width = container.node().clientWidth;
+  const height = container.node().clientHeight;
+  const radius = Math.min(width, height) / 2 - 20;
+  
+  const svg = container.append('svg')
+    .attr('width', width)
+    .attr('height', height);
+  
+  const g = svg.append('g')
+    .attr('transform', `translate(${width/2}, ${height/2})`);
+  
+  // Create simple radar chart based on year data
+  const sectors = [
+    { name: 'Financial', value: yearData.badBot * 0.8 },
+    { name: 'E-commerce', value: yearData.badBot * 0.9 },
+    { name: 'Gaming', value: yearData.badBot * 0.7 },
+    { name: 'Healthcare', value: yearData.badBot * 0.6 }
+  ];
+  
+  sectors.forEach((sector, i) => {
+    const angle = (i / sectors.length) * 2 * Math.PI;
+    const x = Math.cos(angle - Math.PI/2) * (sector.value / 100) * radius;
+    const y = Math.sin(angle - Math.PI/2) * (sector.value / 100) * radius;
+    
+    g.append('line')
+      .attr('x1', 0)
+      .attr('y1', 0)
+      .attr('x2', x)
+      .attr('y2', y)
+      .attr('stroke', '#ef4444')
+      .attr('stroke-width', 2)
+      .attr('opacity', 0.7);
+    
+    g.append('circle')
+      .attr('cx', x)
+      .attr('cy', y)
+      .attr('r', 4)
+      .attr('fill', '#ef4444');
+  });
+}
+
+function updateSwarmVisualization(yearData) {
+  const container = d3.select('#botSwarmViz');
+  if (!container.node()) return;
+  
+  container.selectAll('*').remove();
+  const width = container.node().clientWidth;
+  const height = container.node().clientHeight;
+  
+  const svg = container.append('svg')
+    .attr('width', width)
+    .attr('height', height);
+  
+  // Create particles based on year data
+  const humanCount = Math.floor(yearData.human / 3);
+  const goodBotCount = Math.floor(yearData.goodBot / 3);
+  const badBotCount = Math.floor(yearData.badBot / 3);
+  
+  const particles = [];
+  
+  // Add human particles (blue)
+  for (let i = 0; i < humanCount; i++) {
+    particles.push({
+      x: Math.random() * width,
+      y: Math.random() * height,
+      type: 'human',
+      color: '#3b82f6'
+    });
+  }
+  
+  // Add good bot particles (green)
+  for (let i = 0; i < goodBotCount; i++) {
+    particles.push({
+      x: Math.random() * width,
+      y: Math.random() * height,
+      type: 'good',
+      color: '#10b981'
+    });
+  }
+  
+  // Add bad bot particles (red)
+  for (let i = 0; i < badBotCount; i++) {
+    particles.push({
+      x: Math.random() * width,
+      y: Math.random() * height,
+      type: 'bad',
+      color: '#ef4444'
+    });
+  }
+  
+  svg.selectAll('.particle')
+    .data(particles)
+    .join('circle')
+    .attr('class', 'particle')
+    .attr('cx', d => d.x)
+    .attr('cy', d => d.y)
+    .attr('r', 0)
+    .attr('fill', d => d.color)
+    .attr('opacity', 0.7)
+    .transition()
+    .duration(1000)
+    .delay((d, i) => i * 50)
+    .attr('r', 3);
+}
+
+function updateTrafficFlow(yearData) {
+  // Update traffic flow stats
+  const humanFlow = document.getElementById('humanFlow');
+  const goodFlow = document.getElementById('goodFlow');
+  const badFlow = document.getElementById('badFlow');
+  
+  if (humanFlow) humanFlow.textContent = `${yearData.human}%`;
+  if (goodFlow) goodFlow.textContent = `${yearData.goodBot}%`;
+  if (badFlow) badFlow.textContent = `${yearData.badBot}%`;
+  
+  const container = d3.select('#trafficFlowViz');
+  if (!container.node()) return;
+  
+  container.selectAll('*').remove();
+  const width = container.node().clientWidth;
+  const height = container.node().clientHeight;
+  
+  const svg = container.append('svg')
+    .attr('width', width)
+    .attr('height', height);
+  
+  // Create flowing streams based on percentages
+  const streams = [
+    { type: 'human', percentage: yearData.human, color: '#3b82f6', y: height * 0.2 },
+    { type: 'good', percentage: yearData.goodBot, color: '#10b981', y: height * 0.5 },
+    { type: 'bad', percentage: yearData.badBot, color: '#ef4444', y: height * 0.8 }
+  ];
+  
+  streams.forEach((stream, i) => {
+    const streamWidth = (stream.percentage / 100) * width * 0.8;
+    
+    svg.append('rect')
+      .attr('x', 20)
+      .attr('y', stream.y - 5)
+      .attr('width', 0)
+      .attr('height', 10)
+      .attr('fill', stream.color)
+      .attr('opacity', 0.6)
+      .attr('rx', 5)
+      .transition()
+      .duration(2000)
+      .delay(i * 500)
+      .attr('width', streamWidth);
+    
+    // Add flowing particles
+    for (let j = 0; j < 5; j++) {
+      svg.append('circle')
+        .attr('cx', -10)
+        .attr('cy', stream.y)
+        .attr('r', 2)
+        .attr('fill', stream.color)
+        .attr('opacity', 0.8)
+        .transition()
+        .duration(3000)
+        .delay(i * 500 + j * 200)
+        .ease(d3.easeLinear)
+        .attr('cx', streamWidth + 20)
+        .attr('opacity', 0);
+    }
+  });
+}
+
+// Helper functions for interactions
+function highlightTrafficType(type) {
+  // Add visual highlights based on traffic type
+  d3.selectAll(`.traffic-bubble`)
+    .style('opacity', d => d.type === type ? 1 : 0.3);
+}
+
+function resetHighlights() {
+  d3.selectAll(`.traffic-bubble`)
+    .style('opacity', 0.8);
+}
+
+function showTrendModal(type, data) {
+  // Create a simple trend visualization in a modal-like overlay
+  const overlay = d3.select('body').append('div')
+    .style('position', 'fixed')
+    .style('top', '50%')
+    .style('left', '50%')
+    .style('transform', 'translate(-50%, -50%)')
+    .style('background', 'rgba(0, 0, 0, 0.9)')
+    .style('padding', '20px')
+    .style('border-radius', '10px')
+    .style('color', 'white')
+    .style('z-index', '9999')
+    .style('max-width', '400px');
+  
+  overlay.append('h3')
+    .text(`${type === 'human' ? 'Human' : type === 'goodBot' ? 'Good Bot' : 'Bad Bot'} Traffic Trend`)
+    .style('text-align', 'center')
+    .style('margin-bottom', '20px');
+  
+  const svg = overlay.append('svg')
+    .attr('width', 360)
+    .attr('height', 200);
+  
+  const margin = { top: 20, right: 20, bottom: 30, left: 40 };
+  const chartWidth = 360 - margin.left - margin.right;
+  const chartHeight = 200 - margin.top - margin.bottom;
+  
+  const g = svg.append('g')
+    .attr('transform', `translate(${margin.left}, ${margin.top})`);
+  
+  const xScale = d3.scaleLinear()
+    .domain(d3.extent(data, d => d.year))
+    .range([0, chartWidth]);
+  
+  const yScale = d3.scaleLinear()
+    .domain([0, d3.max(data, d => d[type])])
+    .range([chartHeight, 0]);
+  
+  const line = d3.line()
+    .x(d => xScale(d.year))
+    .y(d => yScale(d[type]))
+    .curve(d3.curveMonotoneX);
+  
+  g.append('path')
+    .datum(data)
+    .attr('d', line)
+    .attr('fill', 'none')
+    .attr('stroke', type === 'human' ? '#3b82f6' : type === 'goodBot' ? '#10b981' : '#ef4444')
+    .attr('stroke-width', 2);
+  
+  g.selectAll('.dot')
+    .data(data)
+    .join('circle')
+    .attr('class', 'dot')
+    .attr('cx', d => xScale(d.year))
+    .attr('cy', d => yScale(d[type]))
+    .attr('r', 3)
+    .attr('fill', type === 'human' ? '#3b82f6' : type === 'goodBot' ? '#10b981' : '#ef4444');
+  
+  overlay.append('button')
+    .text('Close')
+    .style('display', 'block')
+    .style('margin', '20px auto 0')
+    .style('padding', '10px 20px')
+    .style('background', '#3b82f6')
+    .style('color', 'white')
+    .style('border', 'none')
+    .style('border-radius', '5px')
+    .style('cursor', 'pointer')
+    .on('click', () => overlay.remove());
+}
+
+// Helper functions for the other visualizations
+function updateDNAVisualization(yearData) {
+  // Update DNA stats
+  const evasiveEl = document.getElementById('evasiveStat');
+  const advancedEl = document.getElementById('advancedStat');
+  const moderateEl = document.getElementById('moderateStat');
+  
+  if (evasiveEl) evasiveEl.innerHTML = `${yearData.badBot}%<span>Evasive</span>`;
+  if (advancedEl) advancedEl.innerHTML = `${yearData.goodBot}%<span>Advanced</span>`;
+  if (moderateEl) moderateEl.innerHTML = `${yearData.human}%<span>Moderate</span>`;
+  
+  // Create simple DNA helix visualization
+  const container = d3.select('#botDNAViz');
+  if (!container.node()) return;
+  
+  container.selectAll('*').remove();
+  const width = container.node().clientWidth;
+  const height = container.node().clientHeight;
+  
+  const svg = container.append('svg')
+    .attr('width', width)
+    .attr('height', height);
+  
+  // Create animated DNA strands
+  const centerX = width / 2;
+  const amplitude = width / 6;
+  const points = 20;
+  
+  for (let i = 0; i < points; i++) {
+    const y = (i / points) * height;
+    const angle = (i / points) * Math.PI * 4;
+    
+    svg.append('circle')
+      .attr('cx', centerX + amplitude * Math.cos(angle))
+      .attr('cy', y)
+      .attr('r', 3)
+      .attr('fill', i % 3 === 0 ? '#ef4444' : i % 3 === 1 ? '#10b981' : '#3b82f6')
+      .attr('opacity', 0.8)
+      .transition()
+      .duration(2000)
+      .delay(i * 100)
+      .attr('r', 5)
+      .transition()
+      .duration(2000)
+      .attr('r', 3);
+  }
+}
+
+function updateRadarVisualization(yearData) {
+  const container = d3.select('#industryRadarViz');
+  if (!container.node()) return;
+  
+  container.selectAll('*').remove();
+  const width = container.node().clientWidth;
+  const height = container.node().clientHeight;
+  const radius = Math.min(width, height) / 2 - 20;
+  
+  const svg = container.append('svg')
+    .attr('width', width)
+    .attr('height', height);
+  
+  const g = svg.append('g')
+    .attr('transform', `translate(${width/2}, ${height/2})`);
+  
+  // Create simple radar chart based on year data
+  const sectors = [
+    { name: 'Financial', value: yearData.badBot * 0.8 },
+    { name: 'E-commerce', value: yearData.badBot * 0.9 },
+    { name: 'Gaming', value: yearData.badBot * 0.7 },
+    { name: 'Healthcare', value: yearData.badBot * 0.6 }
+  ];
+  
+  sectors.forEach((sector, i) => {
+    const angle = (i / sectors.length) * 2 * Math.PI;
+    const x = Math.cos(angle - Math.PI/2) * (sector.value / 100) * radius;
+    const y = Math.sin(angle - Math.PI/2) * (sector.value / 100) * radius;
+    
+    g.append('line')
+      .attr('x1', 0)
+      .attr('y1', 0)
+      .attr('x2', x)
+      .attr('y2', y)
+      .attr('stroke', '#ef4444')
+      .attr('stroke-width', 2)
+      .attr('opacity', 0.7);
+    
+    g.append('circle')
+      .attr('cx', x)
+      .attr('cy', y)
+      .attr('r', 4)
+      .attr('fill', '#ef4444');
+  });
+}
+
+function updateSwarmVisualization(yearData) {
+  const container = d3.select('#botSwarmViz');
+  if (!container.node()) return;
+  
+  container.selectAll('*').remove();
+  const width = container.node().clientWidth;
+  const height = container.node().clientHeight;
+  
+  const svg = container.append('svg')
+    .attr('width', width)
+    .attr('height', height);
+  
+  // Create particles based on year data
+  const humanCount = Math.floor(yearData.human / 3);
+  const goodBotCount = Math.floor(yearData.goodBot / 3);
+  const badBotCount = Math.floor(yearData.badBot / 3);
+  
+  const particles = [];
+  
+  // Add human particles (blue)
+  for (let i = 0; i < humanCount; i++) {
+    particles.push({
+      x: Math.random() * width,
+      y: Math.random() * height,
+      type: 'human',
+      color: '#3b82f6'
+    });
+  }
+  
+  // Add good bot particles (green)
+  for (let i = 0; i < goodBotCount; i++) {
+    particles.push({
+      x: Math.random() * width,
+      y: Math.random() * height,
+      type: 'good',
+      color: '#10b981'
+    });
+  }
+  
+  // Add bad bot particles (red)
+  for (let i = 0; i < badBotCount; i++) {
+    particles.push({
+      x: Math.random() * width,
+      y: Math.random() * height,
+      type: 'bad',
+      color: '#ef4444'
+    });
+  }
+  
+  svg.selectAll('.particle')
+    .data(particles)
+    .join('circle')
+    .attr('class', 'particle')
+    .attr('cx', d => d.x)
+    .attr('cy', d => d.y)
+    .attr('r', 0)
+    .attr('fill', d => d.color)
+    .attr('opacity', 0.7)
+    .transition()
+    .duration(1000)
+    .delay((d, i) => i * 50)
+    .attr('r', 3);
+}
+
+function updateTrafficFlow(yearData) {
+  // Update traffic flow stats
+  const humanFlow = document.getElementById('humanFlow');
+  const goodFlow = document.getElementById('goodFlow');
+  const badFlow = document.getElementById('badFlow');
+  
+  if (humanFlow) humanFlow.textContent = `${yearData.human}%`;
+  if (goodFlow) goodFlow.textContent = `${yearData.goodBot}%`;
+  if (badFlow) badFlow.textContent = `${yearData.badBot}%`;
+  
+  const container = d3.select('#trafficFlowViz');
+  if (!container.node()) return;
+  
+  container.selectAll('*').remove();
+  const width = container.node().clientWidth;
+  const height = container.node().clientHeight;
+  
+  const svg = container.append('svg')
+    .attr('width', width)
+    .attr('height', height);
+  
+  // Create flowing streams based on percentages
+  const streams = [
+    { type: 'human', percentage: yearData.human, color: '#3b82f6', y: height * 0.2 },
+    { type: 'good', percentage: yearData.goodBot, color: '#10b981', y: height * 0.5 },
+    { type: 'bad', percentage: yearData.badBot, color: '#ef4444', y: height * 0.8 }
+  ];
+  
+  streams.forEach((stream, i) => {
+    const streamWidth = (stream.percentage / 100) * width * 0.8;
+    
+    svg.append('rect')
+      .attr('x', 20)
+      .attr('y', stream.y - 5)
+      .attr('width', 0)
+      .attr('height', 10)
+      .attr('fill', stream.color)
+      .attr('opacity', 0.6)
+      .attr('rx', 5)
+      .transition()
+      .duration(2000)
+      .delay(i * 500)
+      .attr('width', streamWidth);
+    
+    // Add flowing particles
+    for (let j = 0; j < 5; j++) {
+      svg.append('circle')
+        .attr('cx', -10)
+        .attr('cy', stream.y)
+        .attr('r', 2)
+        .attr('fill', stream.color)
+        .attr('opacity', 0.8)
+        .transition()
+        .duration(3000)
+        .delay(i * 500 + j * 200)
+        .ease(d3.easeLinear)
+        .attr('cx', streamWidth + 20)
+        .attr('opacity', 0);
+    }
+  });
+}
+
+// Helper functions for interactions
+function highlightTrafficType(type) {
+  // Add visual highlights based on traffic type
+  d3.selectAll(`.traffic-bubble`)
+    .style('opacity', d => d.type === type ? 1 : 0.3);
+}
+
+function resetHighlights() {
+  d3.selectAll(`.traffic-bubble`)
+    .style('opacity', 0.8);
+}
+
+function showTrendModal(type, data) {
+  // Create a simple trend visualization in a modal-like overlay
+  const overlay = d3.select('body').append('div')
+    .style('position', 'fixed')
+    .style('top', '50%')
+    .style('left', '50%')
+    .style('transform', 'translate(-50%, -50%)')
+    .style('background', 'rgba(0, 0, 0, 0.9)')
+    .style('padding', '20px')
+    .style('border-radius', '10px')
+    .style('color', 'white')
+    .style('z-index', '9999')
+    .style('max-width', '400px');
+  
+  overlay.append('h3')
+    .text(`${type === 'human' ? 'Human' : type === 'goodBot' ? 'Good Bot' : 'Bad Bot'} Traffic Trend`)
+    .style('text-align', 'center')
+    .style('margin-bottom', '20px');
+  
+  const svg = overlay.append('svg')
+    .attr('width', 360)
+    .attr('height', 200);
+  
+  const margin = { top: 20, right: 20, bottom: 30, left: 40 };
+  const chartWidth = 360 - margin.left - margin.right;
+  const chartHeight = 200 - margin.top - margin.bottom;
+  
+  const g = svg.append('g')
+    .attr('transform', `translate(${margin.left}, ${margin.top})`);
+  
+  const xScale = d3.scaleLinear()
+    .domain(d3.extent(data, d => d.year))
+    .range([0, chartWidth]);
+  
+  const yScale = d3.scaleLinear()
+    .domain([0, d3.max(data, d => d[type])])
+    .range([chartHeight, 0]);
+  
+  const line = d3.line()
+    .x(d => xScale(d.year))
+    .y(d => yScale(d[type]))
+    .curve(d3.curveMonotoneX);
+  
+  g.append('path')
+    .datum(data)
+    .attr('d', line)
+    .attr('fill', 'none')
+    .attr('stroke', type === 'human' ? '#3b82f6' : type === 'goodBot' ? '#10b981' : '#ef4444')
+    .attr('stroke-width', 2);
+  
+  g.selectAll('.dot')
+    .data(data)
+    .join('circle')
+    .attr('class', 'dot')
+    .attr('cx', d => xScale(d.year))
+    .attr('cy', d => yScale(d[type]))
+    .attr('r', 3)
+    .attr('fill', type === 'human' ? '#3b82f6' : type === 'goodBot' ? '#10b981' : '#ef4444');
+  
+  overlay.append('button')
+    .text('Close')
+    .style('display', 'block')
+    .style('margin', '20px auto 0')
+    .style('padding', '10px 20px')
+    .style('background', '#3b82f6')
+    .style('color', 'white')
+    .style('border', 'none')
+    .style('border-radius', '5px')
+    .style('cursor', 'pointer')
+    .on('click', () => overlay.remove());
+}
