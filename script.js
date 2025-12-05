@@ -1197,6 +1197,54 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 */
 
+function setupTrendIntroMessage() {
+  const introMessage = document.getElementById('trendIntroMessage');
+  const closeBtn = document.getElementById('closeIntroMessage');
+  const searchSection = document.getElementById('sectionTrend');
+  
+  console.log('Setup intro message:', { introMessage, closeBtn, searchSection });
+  
+  if (!introMessage || !closeBtn || !searchSection) {
+    console.log('Intro message elements not found');
+    return;
+  }
+  
+  // Check if already dismissed
+  const alreadyDismissed = localStorage.getItem('trendIntroMessageDismissed') === 'true';
+  console.log('Already dismissed?', alreadyDismissed);
+  
+  if (alreadyDismissed) {
+    console.log('Skipping intro message - already seen');
+    return;
+  }
+  
+  closeBtn.addEventListener('click', () => {
+    console.log('Closing intro message');
+    introMessage.classList.remove('visible');
+    introMessage.classList.add('hidden');
+    localStorage.setItem('trendIntroMessageDismissed', 'true');
+  });
+  
+  // Show modal when section comes into view
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      console.log('Section intersection:', entry.isIntersecting, entry.intersectionRatio);
+      if (entry.isIntersecting) {
+        console.log('Showing intro message');
+        setTimeout(() => {
+          introMessage.classList.add('visible');
+        }, 300);
+        observer.unobserve(searchSection);
+      }
+    });
+  }, {
+    threshold: 0.3
+  });
+  
+  console.log('Starting to observe search section');
+  observer.observe(searchSection);
+}
+
 // ========================================
 // PREDICTION SECTION INTERACTION
 // ========================================
@@ -1234,6 +1282,7 @@ document.addEventListener('DOMContentLoaded', () => {
 // ========================================
 // GOOGLE SEARCH TREND CHART
 // ========================================
+
 document.addEventListener('DOMContentLoaded', () => {
   console.log('DOM loaded, checking for chart requirements...');
   
@@ -1245,6 +1294,9 @@ document.addEventListener('DOMContentLoaded', () => {
   console.log('D3.js is available:', d3.version);
   
   const chartContainer = document.getElementById('searchTrendChart');
+  
+  // Setup intro message modal
+  setupTrendIntroMessage();
   
   if (!chartContainer) {
     console.error('Chart container #searchTrendChart not found!');
@@ -1399,10 +1451,14 @@ document.addEventListener('DOMContentLoaded', () => {
     setupControls(currentData); // Always use full data for controls
     createCountryControls();
     
-    // Update impact indicator if an event is selected
+    // Update impact indicator and redraw event line if an event is selected
     const eventSelect = document.getElementById('eventSelect');
     if (eventSelect && eventSelect.value && eventSelect.value !== '') {
       updateImpactIndicator(eventSelect.value);
+      // Redraw the event line marker after chart is rendered
+      setTimeout(() => {
+        addEventLineMarker(eventSelect.value);
+      }, 200);
     }
   }
   
@@ -1481,17 +1537,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
   
-  // Setup intro message close button
-  const closeIntroBtn = document.getElementById('closeIntroMessage');
-  const introMessage = document.getElementById('trendIntroMessage');
-  if (closeIntroBtn && introMessage) {
-    closeIntroBtn.addEventListener('click', () => {
-      introMessage.style.animation = 'fadeOut 0.3s ease-out forwards';
-      setTimeout(() => {
-        introMessage.style.display = 'none';
-      }, 300);
-    });
-  }
+  // Intro message is now handled by setupTrendIntroMessage()
   
   function toggleCountry(countryCode) {
     if (visibleCountries.has(countryCode)) {
@@ -2841,6 +2887,12 @@ Week,Dead Internet Theory: (Worldwide)
     
     console.log('Zooming to event:', event.name);
     console.log('Zoom range:', event.zoomRange.start, 'to', event.zoomRange.end);
+    
+    // Store the zoom range so it persists when changing countries
+    currentZoomRange = {
+      start: event.zoomRange.start,
+      end: event.zoomRange.end
+    };
     
     // Filter data to zoom range
     const zoomedData = currentData.filter(d => 

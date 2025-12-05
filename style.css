@@ -1046,21 +1046,55 @@ svg {
 }
 
 .trend-intro-message {
-  background: linear-gradient(135deg, rgba(29, 155, 240, 0.12), rgba(255, 215, 0, 0.08));
-  border: 1.5px solid rgba(29, 155, 240, 0.3);
-  border-radius: 12px;
-  padding: 1rem 1.5rem;
-  margin: 0.5rem auto 1.5rem;
-  max-width: 650px;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(8px);
   display: flex;
   align-items: center;
-  gap: 1rem;
-  backdrop-filter: blur(10px);
-  box-shadow: 0 4px 16px rgba(29, 155, 240, 0.15);
+  justify-content: center;
+  z-index: 10000;
   opacity: 0;
-  transform: translateY(15px);
-  animation: fadeInUp 0.6s ease-out 0.4s forwards;
+  visibility: hidden;
+  transition: opacity 0.3s ease-out, visibility 0.3s ease-out;
+}
+
+.trend-intro-message.visible {
+  opacity: 1;
+  visibility: visible;
+}
+
+.trend-intro-message.hidden {
+  opacity: 0;
+  visibility: hidden;
+}
+
+.trend-intro-message-content {
+  background: linear-gradient(135deg, rgba(29, 155, 240, 0.15), rgba(255, 215, 0, 0.1));
+  border: 2px solid rgba(29, 155, 240, 0.4);
+  border-radius: 16px;
+  padding: 2rem 2.5rem;
+  max-width: 600px;
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
   position: relative;
+  transform: scale(0.95);
+  animation: scaleIn 0.3s ease-out 0.1s forwards;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes scaleIn {
+  from { transform: scale(0.95); }
+  to { transform: scale(1); }
 }
 
 .intro-icon {
@@ -1694,6 +1728,16 @@ svg {
 
 #searchTrendChart svg {
   overflow: visible;
+}
+
+.controls-panel.disabled {
+  pointer-events: none;
+  opacity: 0.5;
+  filter: blur(2px);
+}
+
+.charts-area.disabled {
+  pointer-events: none;
 }
 
 /* Notice shown when CSV is unavailable */
