@@ -1320,12 +1320,12 @@ document.addEventListener('DOMContentLoaded', () => {
   
   // Country data configuration
   const countryData = {
-    'worldwide': { name: 'Worldwide', flag: '🌍', color: '#00ffff', file: 'search_traffic_worldwide_2020.csv' },
-    'us': { name: 'United States', flag: '🇺🇸', color: '#1f77b4', file: 'Datasets/search_country/us_search.csv' },
-    'uk': { name: 'United Kingdom', flag: '🇬🇧', color: '#ff7f0e', file: 'Datasets/search_country/uk_search.csv' },
-    'canada': { name: 'Canada', flag: '🇨🇦', color: '#2ca02c', file: 'Datasets/search_country/canada_search.csv' },
-    'australia': { name: 'Australia', flag: '🇦🇺', color: '#d62728', file: 'Datasets/search_country/aus_search.csv' },
-    'russia': { name: 'Russia', flag: '🇷🇺', color: '#9467bd', file: 'Datasets/search_country/russia_search.csv' }
+    'worldwide': { name: 'Worldwide', flag: '🌍', color: '#1D9BF0', file: 'search_traffic_worldwide_2020.csv' },
+    'us': { name: 'United States', flag: '🇺🇸', color: '#FF6B9D', file: 'Datasets/search_country/us_search.csv' },
+    'uk': { name: 'United Kingdom', flag: '🇬🇧', color: '#FFD700', file: 'Datasets/search_country/uk_search.csv' },
+    'canada': { name: 'Canada', flag: '🇨🇦', color: '#00BA7C', file: 'Datasets/search_country/canada_search.csv' },
+    'australia': { name: 'Australia', flag: '🇦🇺', color: '#9B6BFF', file: 'Datasets/search_country/aus_search.csv' },
+    'russia': { name: 'Russia', flag: '🇷🇺', color: '#FF8C42', file: 'Datasets/search_country/russia_search.csv' }
   };
   
   // Track which countries are currently visible - START WITH WORLDWIDE ONLY
@@ -2586,11 +2586,11 @@ Week,Dead Internet Theory: (Worldwide)
   // Key AI and Bot Innovation Events with search traffic data
   const eventsData = {
     'facebook-ai-policy': {
-      name: 'Facebook Response to "AI Slop" (March 31st, 2024)',
+      name: 'Facebook "AI Slop" Response (Mar 31, 2024)',
       date: new Date('2024-03-31'),
       peakValue: 95,
       impact: 90,
-      description: 'Meta introduces AI content labeling',
+      description: 'Facebook\'s feed became overrun with bizarre AI-generated images like "Shrimp Jesus," prompting widespread discussion about bot activity and the internet feeling artificially populated. (Only event with a major search spike.)',
       articleUrl: 'https://about.fb.com/news/2024/04/metas-approach-to-labeling-ai-generated-content-and-manipulated-media/',
       showLine: true,
       zoomRange: {
@@ -2599,11 +2599,11 @@ Week,Dead Internet Theory: (Worldwide)
       }
     },
     'chatgpt-launch': {
-      name: 'ChatGPT Launch (November 30th, 2022)',
+      name: 'ChatGPT Launch (Nov 30, 2022)',
       date: new Date('2022-11-30'),
-      peakValue: 89,
-      impact: 75,
-      description: 'OpenAI launches ChatGPT to public',
+      peakValue: 0,
+      impact: 0,
+      description: 'ChatGPT\'s release introduced large-scale public interaction with AI, reshaping expectations of online content, though it didn\'t meaningfully increase searches for "Dead Internet Theory." (High cultural impact, low search impact.)',
       showLine: true,
       zoomRange: {
         start: new Date('2022-10-15'),
@@ -2611,11 +2611,11 @@ Week,Dead Internet Theory: (Worldwide)
       }
     },
     'gpt4-release': {
-      name: 'GPT-4 Release (March 14th, 2023)',
+      name: 'GPT-4 Release (Mar 14, 2023)',
       date: new Date('2023-03-14'),
-      peakValue: 142,
-      impact: 85,
-      description: 'Advanced AI model with multimodal capabilities',
+      peakValue: 0,
+      impact: 0,
+      description: 'The debut of GPT-4 showcased dramatic improvements in AI capability and reliability, but public reaction centered on utility rather than fears of a "bot-run" web. (Technically significant, minimal correlation.)',
       showLine: true,
       zoomRange: {
         start: new Date('2023-01-30'),
@@ -2623,11 +2623,11 @@ Week,Dead Internet Theory: (Worldwide)
       }
     },
     'openai-board-crisis': {
-      name: 'OpenAI Board Crisis (November 26th, 2023)',
+      name: 'OpenAI Board Crisis (Nov 26, 2023)',
       date: new Date('2023-11-26'),
-      peakValue: 78,
-      impact: 80,
-      description: 'Sam Altman briefly ousted then reinstated',
+      peakValue: 25,
+      impact: 25,
+      description: 'The sudden firing and reinstatement of Sam Altman dominated AI news cycles and raised questions about the future of AI governance, but had little connection to online authenticity concerns. (Huge news event, low theory impact.)',
       showLine: true,
       zoomRange: {
         start: new Date('2023-10-12'),
@@ -2709,96 +2709,67 @@ Week,Dead Internet Theory: (Worldwide)
       .attr('x2', x)
       .attr('y1', 0)
       .attr('y2', height)
-      .style('stroke', '#ff6b9d')
-      .style('stroke-width', '2px')
+      .style('stroke', '#ffd700')
+      .style('stroke-width', '3px')
       .style('stroke-dasharray', '5,5')
       .style('cursor', 'pointer')
-      .style('opacity', 0)
-      .transition()
+      .style('opacity', 0);
+    
+    // Animate line appearance
+    line.transition()
       .duration(500)
-      .style('opacity', 1);
+      .style('opacity', 0.9);
     
     // Add hover functionality to the line
     line.on('mouseover', function(mouseEvent) {
-      // Create tooltip content based on event
-      let tooltipContent = '';
-      if (eventKey === 'facebook-ai-policy') {
-        tooltipContent = `
-          <div style="font-weight: 600; margin-bottom: 8px;">${event.name}</div>
-          <div style="margin-bottom: 6px;">Meta introduces mandatory AI labeling policy requiring all AI-generated content to be clearly marked.</div>
-          <div style="font-size: 11px; opacity: 0.8; font-style: italic;">Click to read Meta's announcement</div>
-        `;
-      } else if (eventKey === 'chatgpt-launch') {
-        tooltipContent = `
-          <div style="font-weight: 600; margin-bottom: 8px;">${event.name}</div>
-          <div style="margin-bottom: 6px;">OpenAI launches ChatGPT to the public, sparking widespread AI adoption and concerns about AI-generated content.</div>
-        `;
-      } else if (eventKey === 'gpt4-release') {
-        tooltipContent = `
-          <div style="font-weight: 600; margin-bottom: 8px;">${event.name}</div>
-          <div style="margin-bottom: 6px;">OpenAI releases GPT-4, a major advancement in language models with improved capabilities and multimodal features.</div>
-        `;
-      } else if (eventKey === 'openai-board-crisis') {
-        tooltipContent = `
-          <div style="font-weight: 600; margin-bottom: 8px;">${event.name}</div>
-          <div style="margin-bottom: 6px;">Sam Altman is briefly ousted then reinstated as OpenAI CEO, highlighting AI governance concerns and industry instability.</div>
-        `;
-      } else if (eventKey === 'bing-ai') {
-        tooltipContent = `
-          <div style="font-weight: 600; margin-bottom: 8px;">${event.name}</div>
-          <div style="margin-bottom: 6px;">Microsoft integrates ChatGPT into Bing search, marking the first major AI integration in web search.</div>
-        `;
-      } else if (eventKey === 'ai-regulation') {
-        tooltipContent = `
-          <div style="font-weight: 600; margin-bottom: 8px;">${event.name}</div>
-          <div style="margin-bottom: 6px;">European Union discusses comprehensive AI regulation, addressing concerns about AI safety and transparency.</div>
-        `;
-      } else if (eventKey === 'twitter-bots') {
-        tooltipContent = `
-          <div style="font-weight: 600; margin-bottom: 8px;">${event.name}</div>
-          <div style="margin-bottom: 6px;">Twitter conducts major bot removal campaign, highlighting the scale of automated content on social platforms.</div>
-        `;
-      } else {
-        tooltipContent = `
-          <div style="font-weight: 600; margin-bottom: 8px;">${event.name}</div>
-          <div>Significant AI or bot-related event affecting internet discourse.</div>
-        `;
-      }
+      d3.select(this)
+        .style('stroke-width', '4px')
+        .style('opacity', 1);
+      
+      // Create tooltip content using event description
+      const tooltipContent = `
+        <div style="font-weight: 600; margin-bottom: 8px; color: #ffd700;">${event.name}</div>
+        <div style="margin-bottom: 6px; line-height: 1.5;">${event.description}</div>
+      `;
       
       // Show tooltip
-      const tooltip = d3.select('body').selectAll('.line-tooltip').data([1]);
-      const tooltipEnter = tooltip.enter().append('div').attr('class', 'line-tooltip');
+      const tooltip = d3.select('body').selectAll('.event-line-tooltip').data([1]);
+      const tooltipEnter = tooltip.enter().append('div').attr('class', 'event-line-tooltip');
       
       const tooltipMerged = tooltip.merge(tooltipEnter)
         .style('position', 'absolute')
-        .style('background', 'rgba(0, 0, 0, 0.95)')
+        .style('background', 'linear-gradient(135deg, rgba(0, 0, 0, 0.98), rgba(20, 20, 20, 0.98))')
         .style('color', 'white')
-        .style('padding', '12px')
-        .style('border-radius', '8px')
+        .style('padding', '14px 16px')
+        .style('border-radius', '10px')
         .style('font-size', '13px')
-        .style('line-height', '1.4')
-        .style('max-width', '300px')
-        .style('box-shadow', '0 4px 12px rgba(0, 0, 0, 0.3)')
-        .style('border', '1px solid #ff6b9d')
-        .style('z-index', '1000')
+        .style('line-height', '1.5')
+        .style('max-width', '320px')
+        .style('box-shadow', '0 8px 24px rgba(0, 0, 0, 0.5)')
+        .style('border', '2px solid #ffd700')
+        .style('z-index', '10000')
+        .style('pointer-events', 'none')
         .style('opacity', 0)
         .html(tooltipContent);
       
       // Position tooltip
       const tooltipNode = tooltipMerged.node();
       const rect = tooltipNode.getBoundingClientRect();
-      const x = mouseEvent.pageX;
-      const y = mouseEvent.pageY;
+      const pageX = mouseEvent.pageX;
+      const pageY = mouseEvent.pageY;
       
-      let left = x + 15;
-      let top = y - rect.height - 10;
+      let left = pageX + 15;
+      let top = pageY - rect.height / 2;
       
       // Adjust if tooltip goes off screen
       if (left + rect.width > window.innerWidth) {
-        left = x - rect.width - 15;
+        left = pageX - rect.width - 15;
       }
-      if (top < 0) {
-        top = y + 15;
+      if (top < 10) {
+        top = 10;
+      }
+      if (top + rect.height > window.innerHeight - 10) {
+        top = window.innerHeight - rect.height - 10;
       }
       
       tooltipMerged
@@ -2809,72 +2780,72 @@ Week,Dead Internet Theory: (Worldwide)
         .style('opacity', 1);
     })
     .on('mouseout', function() {
-      d3.select('.line-tooltip')
+      d3.select(this)
+        .style('stroke-width', '3px')
+        .style('opacity', 0.9);
+        
+      d3.select('.event-line-tooltip')
         .transition()
         .duration(200)
         .style('opacity', 0)
         .remove();
-    })
-    .on('click', function() {
-      if (event.articleUrl) {
-        window.open(event.articleUrl, '_blank');
-      }
     });
     
-    // Add event label with description next to the line
-    const eventDescription = event.description || event.name.split(' (')[0];
+    // Add event label with full name next to the line
     const label = svgGroup.append('text')
       .attr('class', 'event-line event-description')
-      .attr('x', x + 15)
-      .attr('y', 30)
-      .style('fill', '#ff6b9d')
-      .style('font-size', '13px')
-      .style('font-weight', '600')
+      .attr('x', x + 10)
+      .attr('y', 25)
+      .style('fill', '#ffd700')
+      .style('font-size', '12px')
+      .style('font-weight', '700')
       .style('cursor', 'pointer')
-      .text(eventDescription)
-      .style('opacity', 0)
-      .transition()
+      .style('text-shadow', '0 2px 4px rgba(0, 0, 0, 0.8)')
+      .text(event.name)
+      .style('opacity', 0);
+    
+    label.transition()
       .duration(500)
+      .delay(200)
       .style('opacity', 1);
 
     // Update impact value display
     const impactValue = document.getElementById('impactValue');
     if (impactValue) {
       const impactText = getImpactLevelText(event.impact);
-      impactValue.textContent = `${event.name} - ${impactText}`;
+      impactValue.textContent = impactText;
       impactValue.style.color = '#ffd700';
     }
     
-    // Add "Hover for more info" text next to the line
+    // Add "Hover line for details" hint
     const hoverText = svgGroup.append('text')
       .attr('class', 'event-line hover-hint')
-      .attr('x', x + 10)
-      .attr('y', height - 30)
-      .style('fill', '#ff6b9d')
-      .style('font-size', '10px')
+      .attr('x', x + 8)
+      .attr('y', height - 25)
+      .style('fill', '#ffd700')
+      .style('font-size', '11px')
       .style('font-weight', '500')
-      .style('opacity', 0.8)
+      .style('opacity', 0.7)
       .style('font-style', 'italic')
       .style('pointer-events', 'none')
-      .text('💡 Hover for info')
-      .style('opacity', 0)
-      .transition()
+      .style('text-shadow', '0 1px 3px rgba(0, 0, 0, 0.9)')
+      .text('💡 Hover line for details')
+      .style('opacity', 0);
+      
+    hoverText.transition()
       .duration(500)
-      .delay(300)
+      .delay(400)
       .style('opacity', 0.8);
     
-    // Add hover functionality only if there's an article URL
-    if (event.articleUrl) {
-      label.on('mouseover', function(mouseEvent) {
-        d3.select(this).style('text-decoration', 'underline');
-      })
-      .on('mouseout', function() {
-        d3.select(this).style('text-decoration', 'none');
-      })
-      .on('click', function() {
-        window.open(event.articleUrl, '_blank');
-      });
-    }
+    // Add hover functionality to label
+    label.on('mouseover', function(mouseEvent) {
+      d3.select(this)
+        .style('fill', '#fff');
+    })
+    .on('mouseout', function() {
+      d3.select(this)
+        .style('fill', '#ffd700');
+    });
   }
 
   // Function to zoom chart to specific date range
@@ -2969,47 +2940,47 @@ document.addEventListener('DOMContentLoaded', () => {
   // Key AI and Bot Innovation Events with search traffic data
   const eventsData = {
     'facebook-ai-policy': {
-      name: 'Facebook "AI Slop" Response',
+      name: 'Facebook "AI Slop" Response (Mar 31, 2024)',
       date: new Date('2024-03-31'),
-      impact: 95, // Massive spike in search interest - highest on record
+      impact: 90,
       description: 'Very High Impact',
       showLine: true,
       zoomRange: {
-        start: new Date('2024-03-01'),
-        end: new Date('2024-05-01')
+        start: new Date('2024-02-20'),
+        end: new Date('2024-05-20')
       }
     },
     'chatgpt-launch': {
-      name: 'ChatGPT Launch',
+      name: 'ChatGPT Launch (Nov 30, 2022)',
       date: new Date('2022-11-30'),
-      impact: 65, // Moderate increase, beginning of trend
-      description: 'High Impact',
+      impact: 0,
+      description: 'Low Impact',
       showLine: true,
       zoomRange: {
-        start: new Date('2022-10-30'),
+        start: new Date('2022-10-15'),
         end: new Date('2023-01-15')
       }
     },
     'gpt4-release': {
-      name: 'GPT-4 Release',
+      name: 'GPT-4 Release (Mar 14, 2023)',
       date: new Date('2023-03-14'),
-      impact: 85, // Major spike in March 2023
-      description: 'Very High Impact',
+      impact: 0,
+      description: 'Low Impact',
       showLine: true,
       zoomRange: {
-        start: new Date('2023-02-15'),
+        start: new Date('2023-01-30'),
         end: new Date('2023-04-30')
       }
     },
     'openai-board-crisis': {
-      name: 'OpenAI Board Crisis',
+      name: 'OpenAI Board Crisis (Nov 26, 2023)',
       date: new Date('2023-11-26'),
-      impact: 78, // Significant increase during crisis period
-      description: 'High Impact',
+      impact: 25,
+      description: 'Low-Medium Impact',
       showLine: true,
       zoomRange: {
-        start: new Date('2023-11-01'),
-        end: new Date('2023-12-31')
+        start: new Date('2023-10-12'),
+        end: new Date('2024-01-12')
       }
     }
   };
@@ -3071,86 +3042,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const event = eventsData[eventKey];
     if (!event) return;
     
-    // Calculate impact based on average of visible countries during event period
-    let impact = event.impact; // Default to base impact
+    // Use the predefined impact value from the event
+    let impact = event.impact;
     
-    // Special handling for ChatGPT launch: no impact
-    if (eventKey === 'chatgpt-launch') {
-      impact = 0;
-    }
-    // Special handling for GPT-4 release: low impact only for worldwide and US
-    else if (eventKey === 'gpt4-release') {
-      // Check if only worldwide and/or US are selected
-      const relevantCountries = Array.from(visibleCountries).filter(c => c === 'worldwide' || c === 'us');
-      
-      if (relevantCountries.length === 0) {
-        // None of the relevant countries are selected
-        impact = 0;
-      } else if (fullDataset && visibleCountries && visibleCountries.size > 0) {
-        // Calculate impact only for worldwide and US
-        const eventStart = event.zoomRange.start;
-        const eventEnd = event.zoomRange.end;
-        
-        let totalAverage = 0;
-        let countryCount = 0;
-        
-        for (const countryCode of relevantCountries) {
-          const countryDataset = fullDataset[countryCode];
-          if (!countryDataset) continue;
-          
-          const eventPeriodData = countryDataset.filter(d => 
-            d.date >= eventStart && d.date <= eventEnd
-          );
-          
-          if (eventPeriodData.length > 0) {
-            const countryAverage = eventPeriodData.reduce((sum, d) => sum + d.value, 0) / eventPeriodData.length;
-            totalAverage += countryAverage;
-            countryCount++;
-          }
-        }
-        
-        if (countryCount > 0) {
-          const avgValue = totalAverage / countryCount;
-          // Cap at 35 (low impact) for GPT-4
-          impact = Math.min(35, Math.max(0, avgValue));
-        }
-      }
-    }
-    // Normal calculation for other events
-    else if (fullDataset && visibleCountries && visibleCountries.size > 0) {
-      const eventStart = event.zoomRange.start;
-      const eventEnd = event.zoomRange.end;
-      
-      let totalAverage = 0;
-      let countryCount = 0;
-      
-      // Calculate average for each visible country
-      for (const countryCode of visibleCountries) {
-        const countryDataset = fullDataset[countryCode];
-        if (!countryDataset) continue;
-        
-        // Filter data points within event range
-        const eventPeriodData = countryDataset.filter(d => 
-          d.date >= eventStart && d.date <= eventEnd
-        );
-        
-        if (eventPeriodData.length > 0) {
-          const countryAverage = eventPeriodData.reduce((sum, d) => sum + d.value, 0) / eventPeriodData.length;
-          totalAverage += countryAverage;
-          countryCount++;
-        }
-      }
-      
-      // Calculate final impact as percentage (normalized to 0-100 scale)
-      if (countryCount > 0) {
-        const avgValue = totalAverage / countryCount;
-        // Normalize: assume max search interest is around 100, scale to percentage
-        impact = Math.min(100, Math.max(0, avgValue));
-      }
-    }
+    console.log(`Updating impact for ${eventKey}: impact=${impact}, name=${event.name}`);
     
     const fillWidth = `${impact}%`;
-    const thumbPosition = `calc(${impact}% - 9px)`;
+    // For zero or very low impact, position thumb at the start
+    const thumbPosition = impact <= 1 ? '0px' : `calc(${impact}% - 9px)`;
     
     // Update the visual indicator with animation
     impactFill.style.transition = 'width 0.6s cubic-bezier(0.4, 0, 0.2, 1), background 0.6s ease';
@@ -3158,6 +3057,8 @@ document.addEventListener('DOMContentLoaded', () => {
     
     impactFill.style.width = fillWidth;
     impactThumb.style.left = thumbPosition;
+    
+    console.log(`Set bar width to ${fillWidth} and thumb to ${thumbPosition}`);
     
     // Update impact value text
     const impactValueEl = document.getElementById('impactValue');
