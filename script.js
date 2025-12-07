@@ -1209,12 +1209,12 @@ function setupTrendIntroMessage() {
     return;
   }
   
-  // Check if already dismissed
-  const alreadyDismissed = localStorage.getItem('trendIntroMessageDismissed') === 'true';
-  console.log('Already dismissed?', alreadyDismissed);
+  // Check if already dismissed (session-only so it shows on each new visit/tab)
+  const alreadyDismissed = sessionStorage.getItem('trendIntroMessageDismissed') === 'true';
+  console.log('Already dismissed this session?', alreadyDismissed);
   
   if (alreadyDismissed) {
-    console.log('Skipping intro message - already seen');
+    console.log('Skipping intro message - already seen this session');
     return;
   }
   
@@ -1222,7 +1222,7 @@ function setupTrendIntroMessage() {
     console.log('Closing intro message');
     introMessage.classList.remove('visible');
     introMessage.classList.add('hidden');
-    localStorage.setItem('trendIntroMessageDismissed', 'true');
+    sessionStorage.setItem('trendIntroMessageDismissed', 'true');
   });
   
   // Show modal when section comes into view
