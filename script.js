@@ -1336,6 +1336,17 @@ document.addEventListener('DOMContentLoaded', () => {
   // Track which countries are currently visible - START WITH WORLDWIDE ONLY
   let visibleCountries = new Set(['worldwide']);
   let allCountryData = {};
+  
+  // Remove duplicate dates per country to avoid double dots/lines
+  function dedupeCountrySeries(dataArray) {
+    const byDate = new Map();
+    dataArray.forEach(d => {
+      if (!d || !d.date) return;
+      const key = d.date.toISOString().slice(0, 10);
+      if (!byDate.has(key)) byDate.set(key, d);
+    });
+    return Array.from(byDate.values()).sort((a, b) => a.date - b.date);
+  }
 
   // Load data from CSV files
   async function loadCountryData() {
@@ -1361,12 +1372,14 @@ document.addEventListener('DOMContentLoaded', () => {
             })
             .filter(d => d && d.date && !isNaN(d.value));
           
-          allCountryData[countryCode] = processedData;
-          console.log(`Loaded ${processedData.length} data points for ${country.name}`);
+          const uniqueData = dedupeCountrySeries(processedData);
+          
+          allCountryData[countryCode] = uniqueData;
+          console.log(`Loaded ${uniqueData.length} data points for ${country.name}`);
         } catch (error) {
           console.error(`Error loading ${country.name} data:`, error);
           // Use sample data as fallback
-          allCountryData[countryCode] = createSampleDataForCountry(countryCode);
+          allCountryData[countryCode] = dedupeCountrySeries(createSampleDataForCountry(countryCode));
         }
       }
       
@@ -1386,7 +1399,7 @@ document.addEventListener('DOMContentLoaded', () => {
       console.error('Error in loadCountryData:', error);
       // Fallback to sample data for all countries
       for (const countryCode of Object.keys(countryData)) {
-        allCountryData[countryCode] = createSampleDataForCountry(countryCode);
+        allCountryData[countryCode] = dedupeCountrySeries(createSampleDataForCountry(countryCode));
       }
       updateChartData();
     }
@@ -1400,11 +1413,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const baseData = createRealisticSampleData();
     const multiplier = countryData[countryCode] === 'us' ? 1.0 : Math.random() * 0.8 + 0.4;
     
-    return baseData.map(d => ({
+    const sampled = baseData.map(d => ({
       date: d.date,
       value: Math.round(d.value * multiplier),
       country: countryCode
     }));
+
+    return dedupeCountrySeries(sampled);
   }
   
   function updateChartData() {
@@ -2237,8 +2252,8 @@ Week,Dead Internet Theory: (Worldwide)
         })
         .on('mousemove', function(event) {
           tooltip
-            .style('left', (event.pageX + 15) + 'px')
-            .style('top', (event.pageY - 10) + 'px');
+            .style('left', (event.clientX + 15) + 'px')
+            .style('top', (event.clientY - 10) + 'px');
         });
       
       // Add dots for data points
@@ -2280,8 +2295,8 @@ Week,Dead Internet Theory: (Worldwide)
         })
         .on('mousemove', function(event) {
           tooltip
-            .style('left', (event.pageX + 15) + 'px')
-            .style('top', (event.pageY - 10) + 'px');
+            .style('left', (event.clientX + 15) + 'px')
+            .style('top', (event.clientY - 10) + 'px');
         });
     });
     
