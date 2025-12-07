@@ -1317,15 +1317,20 @@ document.addEventListener('DOMContentLoaded', () => {
   
   let currentData = [];
   let svg, xScale, yScale, line, area, path, dots, peakCircle, peakLabel;
+
+  // Resolve data paths so GitHub Pages can fetch real CSVs (not fall back to samples)
+  const githubRawBase = 'https://raw.githubusercontent.com/hayatfarah/dead_internet_theory/main/';
+  const isGithubPages = location.hostname.endsWith('github.io');
+  const resolveDataPath = (relativePath) => isGithubPages ? `${githubRawBase}${relativePath}` : relativePath;
   
   // Country data configuration
   const countryData = {
-    'worldwide': { name: 'Worldwide', flag: '🌍', color: '#1D9BF0', file: 'search_traffic_worldwide_2020.csv' },
-    'us': { name: 'United States', flag: '🇺🇸', color: '#FF6B9D', file: 'Datasets/search_country/us_search.csv' },
-    'uk': { name: 'United Kingdom', flag: '🇬🇧', color: '#FFD700', file: 'Datasets/search_country/uk_search.csv' },
-    'canada': { name: 'Canada', flag: '🇨🇦', color: '#00BA7C', file: 'Datasets/search_country/canada_search.csv' },
-    'australia': { name: 'Australia', flag: '🇦🇺', color: '#9B6BFF', file: 'Datasets/search_country/aus_search.csv' },
-    'russia': { name: 'Russia', flag: '🇷🇺', color: '#FF8C42', file: 'Datasets/search_country/russia_search.csv' }
+    'worldwide': { name: 'Worldwide', flag: '🌍', color: '#1D9BF0', file: resolveDataPath('search_traffic_worldwide_2020.csv') },
+    'us': { name: 'United States', flag: '🇺🇸', color: '#FF6B9D', file: resolveDataPath('Datasets/search_country/us_search.csv') },
+    'uk': { name: 'United Kingdom', flag: '🇬🇧', color: '#FFD700', file: resolveDataPath('Datasets/search_country/uk_search.csv') },
+    'canada': { name: 'Canada', flag: '🇨🇦', color: '#00BA7C', file: resolveDataPath('Datasets/search_country/canada_search.csv') },
+    'australia': { name: 'Australia', flag: '🇦🇺', color: '#9B6BFF', file: resolveDataPath('Datasets/search_country/aus_search.csv') },
+    'russia': { name: 'Russia', flag: '🇷🇺', color: '#FF8C42', file: resolveDataPath('Datasets/search_country/russia_search.csv') }
   };
   
   // Track which countries are currently visible - START WITH WORLDWIDE ONLY
@@ -5884,7 +5889,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   async function loadTikTokBotChart() {
     try {
-      const response = await fetch('Datasets/search_country/tiktok.csv');
+      const response = await fetch(resolveDataPath('Datasets/search_country/tiktok.csv'));
       const csvText = await response.text();
       const lines = csvText.split('\n').slice(1); // Skip header
       
