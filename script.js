@@ -55,6 +55,11 @@ const observer = new IntersectionObserver(
             msg.classList.add('animate');
           });
         }
+
+        // Clear industry overlay when leaving bot classification section
+        if (id !== 'sectionBotClassification') {
+          clearIndustryOverlay();
+        }
       }
     });
   },
