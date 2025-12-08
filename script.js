@@ -1320,6 +1320,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Resolve data paths so GitHub Pages can fetch real CSVs (not fall back to samples)
   const githubRawBase = 'https://raw.githubusercontent.com/hayatfarah/dead_internet_theory/main/';
+  const isGithubPages = location.hostname.endsWith('github.io');
   const resolveDataPath = (relativePath) => relativePath.replace(/^\//, '');
 
   // Country data configuration
@@ -1375,13 +1376,9 @@ async function loadCountryData() {
     for (const [countryCode, country] of Object.entries(countryData)) {
       try {
 
-        // --- IMPORTANT FIX: Build a correct GitHub Pages path ---
-        const filePath = isGithubPages
-          ? githubRawBase + resolveDataPath(country.file)
-          : resolveDataPath(country.file);
-
+        // Build a path relative to the site root (works on GitHub Pages and local server)
+        const filePath = resolveDataPath(country.file);
         console.log("Loading CSV from:", filePath);
-        // ---------------------------------------------------------
 
         const text = await d3.text(filePath);
 
