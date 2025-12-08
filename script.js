@@ -1330,18 +1330,37 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Resolve data paths so GitHub Pages can fetch real CSVs (not fall back to samples)
   const githubRawBase = 'https://raw.githubusercontent.com/hayatfarah/dead_internet_theory/main/';
-  const isGithubPages = location.hostname.endsWith('github.io');
-  const resolveDataPath = (relativePath) => isGithubPages ? `${githubRawBase}${relativePath}` : relativePath;
-  
+  const resolveDataPath = (relativePath) => relativePath.replace(/^\//, '');
+
   // Country data configuration
-  const countryData = {
-    'worldwide': { name: 'Worldwide', flag: '🌍', color: '#1D9BF0', file: resolveDataPath('search_traffic_worldwide_2020.csv') },
-    'us': { name: 'United States', flag: '🇺🇸', color: '#FF6B9D', file: resolveDataPath('Datasets/search_country/us_search.csv') },
-    'uk': { name: 'United Kingdom', flag: '🇬🇧', color: '#FFD700', file: resolveDataPath('Datasets/search_country/uk_search.csv') },
-    'canada': { name: 'Canada', flag: '🇨🇦', color: '#00BA7C', file: resolveDataPath('Datasets/search_country/canada_search.csv') },
-    'australia': { name: 'Australia', flag: '🇦🇺', color: '#9B6BFF', file: resolveDataPath('Datasets/search_country/aus_search.csv') },
-    'russia': { name: 'Russia', flag: '🇷🇺', color: '#FF8C42', file: resolveDataPath('Datasets/search_country/russia_search.csv') }
-  };
+const countryData = {
+  worldwide: { 
+    name: 'Worldwide', flag: '🌍', color: '#1D9BF0',
+    file: 'search_traffic_worldwide_2020.csv' // this CSV lives at repo root
+  },
+  us: { 
+    name: 'United States', flag: '🇺🇸', color: '#FF6B9D',
+    file: 'Datasets/search_country/us_search.csv'
+  },
+  uk: { 
+    name: 'United Kingdom', flag: '🇬🇧', color: '#FFD700',
+    file: 'Datasets/search_country/uk_search.csv'
+  },
+  canada: { 
+    name: 'Canada', flag: '🇨🇦', color: '#00BA7C',
+    file: 'Datasets/search_country/canada_search.csv'
+  },
+  australia: { 
+    name: 'Australia', flag: '🇦🇺', color: '#9B6BFF',
+    file: 'Datasets/search_country/aus_search.csv'
+  },
+  russia: { 
+    name: 'Russia', flag: '🇷🇺', color: '#FF8C42',
+    file: 'Datasets/search_country/russia_search.csv'
+  }
+};
+
+
   
   // Track which countries are currently visible - START WITH WORLDWIDE ONLY
   let visibleCountries = new Set(['worldwide']);
@@ -1358,64 +1377,82 @@ document.addEventListener('DOMContentLoaded', () => {
     return Array.from(byDate.values()).sort((a, b) => a.date - b.date);
   }
 
-  // Load data from CSV files
-  async function loadCountryData() {
-    try {
-      console.log('Loading country data...');
-      
-      for (const [countryCode, country] of Object.entries(countryData)) {
-        try {
-          const text = await d3.text(country.file);
-          
-          // Parse like the working CSV loader
-          const lines = text.split('\n').slice(2); // Skip first 2 lines (category and empty line)
-          
-          const processedData = lines
-            .map(line => {
-              const [dateStr, valueStr] = line.split(',');
-              if (!dateStr || !valueStr) return null;
-              
-              const date = d3.timeParse('%Y-%m-%d')(dateStr.trim());
-              const value = +valueStr.trim();
-              
-              return { date, value, country: countryCode };
-            })
-            .filter(d => d && d.date && !isNaN(d.value));
-          
-          const uniqueData = dedupeCountrySeries(processedData);
-          
-          allCountryData[countryCode] = uniqueData;
-          console.log(`✅ Successfully loaded ${uniqueData.length} data points for ${country.name} from CSV`);
-        } catch (error) {
-          console.error(`Error loading ${country.name} data:`, error);
-          console.warn('⚠️ USING SAMPLE DATA for', country.name, '- CSV file not found or could not be loaded');
-          // Use sample data as fallback
-          allCountryData[countryCode] = dedupeCountrySeries(createSampleDataForCountry(countryCode));
-        }
-      }
-      
-      // Set fullDataset to all loaded data (unfiltered, all countries)
-      fullDataset = [];
-      for (const countryCode of Object.keys(countryData)) {
-        if (allCountryData[countryCode]) {
-          fullDataset = fullDataset.concat(allCountryData[countryCode]);
-        }
-      }
-      fullDataset.sort((a, b) => a.date - b.date);
+// Load data from CSV files
+async function loadCountryData() {
+  try {
+    console.log('Loading country data...');
 
-      // Combine visible country data
-      updateChartData();
-      
-    } catch (error) {
-      console.error('Error in loadCountryData:', error);
-      console.warn('⚠️ USING SAMPLE DATA for ALL countries - Major error in loading CSV files');
-      // Fallback to sample data for all countries
-      for (const countryCode of Object.keys(countryData)) {
-        allCountryData[countryCode] = dedupeCountrySeries(createSampleDataForCountry(countryCode));
+    for (const [countryCode, country] of Object.entries(countryData)) {
+      try {
+
+        // --- IMPORTANT FIX: Build a correct GitHub Pages path ---
+        const filePath = isGithubPages
+          ? githubRawBase + resolveDataPath(country.file)
+          : resolveDataPath(country.file);
+
+        console.log("Loading CSV from:", filePath);
+        // ---------------------------------------------------------
+
+        const text = await d3.text(filePath);
+
+        // Parse like the working CSV loader
+        const lines = text.split('\n').slice(2); // Skip first 2 lines
+        const processedData = lines
+          .map(line => {
+            const [dateStr, valueStr] = line.split(',');
+            if (!dateStr || !valueStr) return null;
+
+            const date = d3.timeParse('%Y-%m-%d')(dateStr.trim());
+            const value = Number(valueStr.trim());
+
+            return { date, value, country: countryCode };
+          })
+          .filter(d => d && d.date && !isNaN(d.value));
+
+        const uniqueData = dedupeCountrySeries(processedData);
+        allCountryData[countryCode] = uniqueData;
+
+        console.log(
+          "✅ Successfully loaded",
+          uniqueData.length,
+          "points for",
+          country.name
+        );
+
+      } catch (error) {
+        console.error(`❌ Error loading ${country.name} data from CSV:`, error);
+        console.warn('⚠️ Using sample data instead...');
+        allCountryData[countryCode] = dedupeCountrySeries(
+          createSampleDataForCountry(countryCode)
+        );
       }
-      updateChartData();
     }
+
+    // Combine all loaded country data
+    fullDataset = [];
+    for (const code of Object.keys(countryData)) {
+      if (allCountryData[code]) {
+        fullDataset = fullDataset.concat(allCountryData[code]);
+      }
+    }
+
+    fullDataset.sort((a, b) => a.date - b.date);
+
+    updateChartData(); // Continue workflow
+
+  } catch (error) {
+    console.error('Error in loadCountryData:', error);
+    console.warn('⚠️ Using sample data for ALL countries');
+
+    for (const code of Object.keys(countryData)) {
+      allCountryData[code] = dedupeCountrySeries(createSampleDataForCountry(code));
+    }
+
+    updateChartData();
   }
+}
+
+
 
   // Start loading data
   loadCountryData();
