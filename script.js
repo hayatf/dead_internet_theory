@@ -1320,14 +1320,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Resolve data paths so GitHub Pages can fetch real CSVs (not fall back to samples)
   const githubRawBase = 'https://raw.githubusercontent.com/hayatfarah/dead_internet_theory/main/';
-  const isGithubPages = location.hostname.endsWith('github.io');
-  const resolveDataPath = (relativePath) => relativePath.replace(/^\//, "");
+  const resolveDataPath = (relativePath) => relativePath.replace(/^\//, '');
 
   // Country data configuration
 const countryData = {
   worldwide: { 
     name: 'Worldwide', flag: '🌍', color: '#1D9BF0',
-    file: 'Datasets/search_traffic_worldwide_2020.csv'
+    file: 'search_traffic_worldwide_2020.csv' // this CSV lives at repo root
   },
   us: { 
     name: 'United States', flag: '🇺🇸', color: '#FF6B9D',
