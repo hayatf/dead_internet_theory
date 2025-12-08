@@ -1375,9 +1375,10 @@ document.addEventListener('DOMContentLoaded', () => {
           const uniqueData = dedupeCountrySeries(processedData);
           
           allCountryData[countryCode] = uniqueData;
-          console.log(`Loaded ${uniqueData.length} data points for ${country.name}`);
+          console.log(`✅ Successfully loaded ${uniqueData.length} data points for ${country.name} from CSV`);
         } catch (error) {
           console.error(`Error loading ${country.name} data:`, error);
+          console.warn('⚠️ USING SAMPLE DATA for', country.name, '- CSV file not found or could not be loaded');
           // Use sample data as fallback
           allCountryData[countryCode] = dedupeCountrySeries(createSampleDataForCountry(countryCode));
         }
@@ -1397,6 +1398,7 @@ document.addEventListener('DOMContentLoaded', () => {
       
     } catch (error) {
       console.error('Error in loadCountryData:', error);
+      console.warn('⚠️ USING SAMPLE DATA for ALL countries - Major error in loading CSV files');
       // Fallback to sample data for all countries
       for (const countryCode of Object.keys(countryData)) {
         allCountryData[countryCode] = dedupeCountrySeries(createSampleDataForCountry(countryCode));
@@ -1920,6 +1922,7 @@ Week,Dead Internet Theory: (Worldwide)
 
       if (allData.length === 0) {
         console.error('No valid data found in CSV');
+        console.warn('⚠️ USING SAMPLE DATA - CSV file was loaded but contained no valid data');
         // Fallback to realistic sample data
         const realisticSampleData = createRealisticSampleData();
         currentData = realisticSampleData;
@@ -1929,7 +1932,7 @@ Week,Dead Internet Theory: (Worldwide)
         return;
       }
 
-      console.log(`Successfully loaded ${allData.length} data points from CSV`);
+      console.log(`✅ Successfully loaded ${allData.length} data points from CSV - Using real CSV data`);
       console.log('First few data points:', allData.slice(0, 5));
       console.log('Last few data points:', allData.slice(-5));
       console.log('Date range:', d3.extent(allData, d => d.date));
@@ -1972,6 +1975,7 @@ Week,Dead Internet Theory: (Worldwide)
       
     } catch (e) {
       console.error('Error parsing CSV data:', e);
+      console.warn('⚠️ USING SAMPLE DATA - Error occurred while parsing CSV data');
       // Fallback to realistic sample data
       const realisticSampleData = createRealisticSampleData();
       currentData = realisticSampleData;
@@ -2148,24 +2152,15 @@ Week,Dead Internet Theory: (Worldwide)
       .style('fill', '#ffffff')
       .text('Time');
     
-    // Create tooltip
-    const tooltip = d3.select('body')
-      .select('.chart-tooltip')
-      .empty() ? 
-      d3.select('body')
+    // Create or reuse tooltip
+    let tooltip = d3.select('body').select('.chart-tooltip');
+    if (tooltip.empty()) {
+      tooltip = d3.select('body')
         .append('div')
-        .attr('class', 'chart-tooltip')
-        .style('position', 'absolute')
-        .style('background', 'rgba(0, 0, 0, 0.9)')
-        .style('color', 'white')
-        .style('padding', '8px 12px')
-        .style('border-radius', '6px')
-        .style('font-size', '14px')
-        .style('font-weight', '600')
-        .style('pointer-events', 'none')
-        .style('opacity', 0)
-        .style('z-index', 1000) :
-      d3.select('.chart-tooltip');
+        .attr('class', 'chart-tooltip');
+    }
+    // Reset tooltip state
+    tooltip.style('opacity', 0);
     
     // Draw lines for each country
     dataByCountry.forEach((countryDataArray, country) => {
@@ -2218,6 +2213,9 @@ Week,Dead Internet Theory: (Worldwide)
       
       linePath
         .on('mouseenter', function(event) {
+          // Don't show tooltip if hovering over a dot
+          if (event.target.tagName === 'circle') return;
+          
           // Find and highlight the visible line
           svg.select(`.country-${country}[stroke-opacity="1"]`)
             .transition()
@@ -2235,7 +2233,10 @@ Week,Dead Internet Theory: (Worldwide)
             .style('opacity', 1)
             .html(`${flag} ${countryName}`);
         })
-        .on('mouseleave', function() {
+        .on('mouseleave', function(event) {
+          // Don't hide if moving to a dot
+          if (event.relatedTarget && event.relatedTarget.tagName === 'circle') return;
+          
           svg.select(`.country-${country}[stroke-opacity="1"]`)
             .transition()
             .duration(100)
@@ -2251,31 +2252,47 @@ Week,Dead Internet Theory: (Worldwide)
           tooltip.style('opacity', 0);
         })
         .on('mousemove', function(event) {
+          // Don't update position if on a dot
+          if (event.target.tagName === 'circle') return;
+          
           tooltip
             .style('left', (event.clientX + 15) + 'px')
             .style('top', (event.clientY - 10) + 'px');
         });
       
-      // Add dots for data points
-      svg.selectAll(`.dot-${country}`)
+      // Add dots for data points with larger invisible hit areas
+      const dotGroup = svg.selectAll(`.dot-group-${country}`)
         .data(sortedData)
-        .enter().append('circle')
+        .enter().append('g')
+        .attr('class', `dot-group dot-group-${country}`)
+        .attr('transform', d => `translate(${xScale(d.date)}, ${yScale(d.value)})`);
+      
+      // Invisible larger hit area for easier hovering
+      dotGroup.append('circle')
+        .attr('r', 8)
+        .attr('fill', 'transparent')
+        .style('cursor', 'pointer');
+      
+      // Visible dot
+      dotGroup.append('circle')
         .attr('class', `dot dot-${country}`)
-        .attr('cx', d => xScale(d.date))
-        .attr('cy', d => yScale(d.value))
         .attr('r', isWorldwide ? 4 : 3)
         .attr('fill', color)
         .style('opacity', isWorldwide ? 1 : 0.7)
-        .style('cursor', 'pointer')
-        .on('mouseenter', function(event, d) {
-          d3.select(this)
-            .transition()
-            .duration(100)
+        .style('pointer-events', 'none'); // Events handled by the group
+      
+      // Add hover handlers to the group
+      dotGroup
+        .on('mouseover', function(event, d) {
+          // Enlarge the visible dot
+          d3.select(this).select('.dot')
             .attr('r', isWorldwide ? 6 : 5)
             .style('opacity', 1);
           
           tooltip
             .style('opacity', 1)
+            .style('left', (event.pageX + 15) + 'px')
+            .style('top', (event.pageY - 10) + 'px')
             .html(`
               <div>${flag} ${countryName}</div>
               <div style="margin-top: 4px; font-size: 12px;">
@@ -2284,10 +2301,9 @@ Week,Dead Internet Theory: (Worldwide)
               </div>
             `);
         })
-        .on('mouseleave', function() {
-          d3.select(this)
-            .transition()
-            .duration(100)
+        .on('mouseout', function(event) {
+          // Reset the visible dot
+          d3.select(this).select('.dot')
             .attr('r', isWorldwide ? 4 : 3)
             .style('opacity', isWorldwide ? 1 : 0.7);
           
@@ -2295,8 +2311,8 @@ Week,Dead Internet Theory: (Worldwide)
         })
         .on('mousemove', function(event) {
           tooltip
-            .style('left', (event.clientX + 15) + 'px')
-            .style('top', (event.clientY - 10) + 'px');
+            .style('left', (event.pageX + 15) + 'px')
+            .style('top', (event.pageY - 10) + 'px');
         });
     });
     
@@ -6888,18 +6904,66 @@ function createMainTimeline() {
     .y1(d => yScale(d[1]))
     .curve(d3.curveMonotoneX);
   
-  // Draw areas
+  // Draw areas with hover effects
   g.selectAll('.area')
     .data(series)
     .join('path')
-    .attr('class', 'area')
+    .attr('class', d => `area area-${d.key}`)
     .attr('fill', d => colors[d.key])
     .attr('d', areaGenerator)
-    .style('opacity', 0.8);
+    .style('opacity', 0.8)
+    .style('cursor', 'pointer')
+    .on('mouseover', function(event, d) {
+      // Highlight this area
+      d3.select(this)
+        .style('opacity', 1)
+        .style('filter', 'brightness(1.2)');
+      
+      // Dim other areas
+      g.selectAll('.area')
+        .filter(function(otherD) { return otherD.key !== d.key; })
+        .style('opacity', 0.3);
+      
+      // Show label based on which section
+      const labels = {
+        human: 'Human Traffic',
+        goodBot: 'Good Bots (Search engines, monitoring)',
+        badBot: 'Bad Bots (Scrapers, attackers, spam)'
+      };
+      
+      // Add temporary label
+      g.append('text')
+        .attr('class', 'hover-label')
+        .attr('x', chartWidth / 2)
+        .attr('y', -10)
+        .attr('text-anchor', 'middle')
+        .style('font-size', '14px')
+        .style('font-weight', 'bold')
+        .style('fill', colors[d.key])
+        .style('text-shadow', '0 2px 4px rgba(0,0,0,0.8)')
+        .text(labels[d.key]);
+    })
+    .on('mouseout', function() {
+      // Reset all areas to normal
+      g.selectAll('.area')
+        .style('opacity', 0.8)
+        .style('filter', 'none');
+      
+      // Remove hover label
+      g.selectAll('.hover-label').remove();
+    });
   
-  // Add percentage labels
+  // Add percentage labels (only for years 2013, 2018, 2023)
   data.forEach(d => {
-    const x = xScale(d.year);
+    // Only show labels for specific years
+    if (![2013, 2018, 2023].includes(d.year)) return;
+    
+    // Use consistent offset for all years, but adjust horizontally within bounds
+    const baseX = xScale(d.year);
+    let xOffset = 0;
+    if (d.year === 2013) xOffset = 20; // Move 2013 right to avoid left edge
+    if (d.year === 2023) xOffset = -20; // Move 2023 left to avoid right edge
+    const x = baseX + xOffset;
     
     // Bad bot (top)
     if (d.badBot > 10) {
@@ -6975,7 +7039,7 @@ function createMainTimeline() {
     .style('font-size', '20px')
     .style('font-weight', 'bold')
     .style('fill', '#E7E9EA')
-    .text('Global Internet Traffic (2013-2023)');
+    .text('Global Web Traffic Composition (2013–2023)');
   
   // Subtitle
   svg.append('text')
@@ -6984,32 +7048,47 @@ function createMainTimeline() {
     .attr('text-anchor', 'middle')
     .style('font-size', '13px')
     .style('fill', '#71767B')
-    .text('Percentage breakdown of human traffic, good bots, and bad bots');
+    .text('Traffic refers to web requests, not posts. Bad bots target infrastructure, not content.');
   
-  // Legend
-  const legend = svg.append('g')
-    .attr('transform', `translate(${width - 150}, 80)`);
-  
+  // Legend at bottom
   const legendData = [
     { key: 'badBot', label: 'Bad Bots', color: colors.badBot },
     { key: 'goodBot', label: 'Good Bots', color: colors.goodBot },
     { key: 'human', label: 'Human', color: colors.human }
   ];
   
+  const legendGroup = svg.append('g')
+    .attr('transform', `translate(${margin.left + chartWidth / 2}, ${height - 25})`);
+  
+  // Background box for legend
+  const legendBoxWidth = legendData.length * 110;
+  const legendBoxHeight = 30;
+  legendGroup.append('rect')
+    .attr('x', -legendBoxWidth / 2)
+    .attr('y', -legendBoxHeight / 2)
+    .attr('width', legendBoxWidth)
+    .attr('height', legendBoxHeight)
+    .attr('rx', 6)
+    .attr('fill', 'rgba(47, 51, 54, 0.9)')
+    .attr('stroke', '#2F3336')
+    .attr('stroke-width', 1);
+  
   legendData.forEach((item, i) => {
-    const legendItem = legend.append('g')
-      .attr('transform', `translate(0, ${i * 22})`);
+    const legendItem = legendGroup.append('g')
+      .attr('transform', `translate(${-legendBoxWidth / 2 + 15 + i * 110}, 0)`);
     
     legendItem.append('rect')
       .attr('width', 14)
       .attr('height', 14)
+      .attr('y', -7)
       .attr('rx', 3)
       .attr('fill', item.color);
     
     legendItem.append('text')
       .attr('x', 20)
-      .attr('y', 11)
+      .attr('y', 4)
       .style('font-size', '13px')
+      .style('font-weight', '500')
       .style('fill', '#E7E9EA')
       .text(item.label);
   });
@@ -7206,17 +7285,6 @@ function showIndustryOnMainChart(industry) {
     .attr('x2', chartWidth)
     .attr('y1', yScale(100 - industry.badBot))
     .attr('y2', yScale(100 - industry.badBot));
-  
-  // Add markers at each year point
-  const years = [2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023];
-  years.forEach((year, idx) => {
-    g.append('circle')
-      .attr('class', 'industry-overlay-element industry-marker')
-      .attr('cx', xScale(year))
-      .attr('cy', yScale(100 - industry.badBot))
-      .attr('r', 6)
-      .style('animation-delay', `${idx * 0.05}s`);
-  });
   
   // Add comparison text
   const globalBadBot2023 = 50.4;
