@@ -55,6 +55,11 @@ const observer = new IntersectionObserver(
             msg.classList.add('animate');
           });
         }
+
+        // Clear industry overlay when leaving bot classification section
+        if (id !== 'sectionBotClassification') {
+          clearIndustryOverlay();
+        }
       }
     });
   },
@@ -472,6 +477,15 @@ document.addEventListener('DOMContentLoaded', () => {
   let isDragging = false;
   let dragMode = null; // 'select' or 'deselect'
 
+  // Keep a snapshot of the user's grid (order + selections) for the reveal section
+  function snapshotPredictionData() {
+    window.botPredictionDataSnapshot = tweets.map((t, idx) => ({
+      id: idx,
+      isBot: t.type === 'bot',
+      selected: t.selected
+    }));
+  }
+
   // Sample tweet texts for variety
   const tweetTexts = [
     "Just had the best coffee ☕",
@@ -547,6 +561,9 @@ document.addEventListener('DOMContentLoaded', () => {
       
       tweetGrid.appendChild(tweetCard);
     });
+
+    // Capture the freshly initialized grid state so the reveal can mirror it
+    snapshotPredictionData();
   }
 
   // Toggle tweet selection
@@ -565,6 +582,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     updateCount();
+    snapshotPredictionData();
   }
 
   // Update selected count
@@ -603,6 +621,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Store the user prediction and selected indices for the next section
     window.userBotPrediction = userPrediction;
     window.userSelectedIndices = tweets.map((t, idx) => t.selected ? idx : -1).filter(idx => idx !== -1);
+    snapshotPredictionData();
 
     // Notify any listeners (e.g., the reveal visualization) that a prediction was submitted
     document.dispatchEvent(new CustomEvent('userPredictionSubmitted', { detail: { prediction: userPrediction } }));
@@ -660,34 +679,30 @@ document.addEventListener('DOMContentLoaded', () => {
       .append('div')
       .attr('class', 'reveal-grid');
 
-    // Create array of 100 items: 3 bots, 97 humans
-    let data = [];
-    for (let i = 0; i < 100; i++) {
-      data.push({
-        id: i,
-        isBot: i < 3 // First 3 are bots
-      });
+    // Use the exact order and selections from the prediction grid so highlights align
+    let baseData = Array.isArray(window.botPredictionDataSnapshot) && window.botPredictionDataSnapshot.length
+      ? window.botPredictionDataSnapshot
+      : null;
+
+    // Fallback to a default 3-bot grid if no prediction data is available
+    if (!baseData) {
+      baseData = [];
+      for (let i = 0; i < 100; i++) {
+        baseData.push({ id: i, isBot: i < 3, selected: false });
+      }
     }
 
-    // Shuffle the array
-    for (let i = data.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [data[i], data[j]] = [data[j], data[i]];
-    }
-
-    console.log('Total items:', data.length);
-    console.log('Bots:', data.filter(d => d.isBot).length);
-    console.log('Humans:', data.filter(d => !d.isBot).length);
-
-    // Get user selections
-    const userSelections = window.userSelectedIndices || [];
+    const data = baseData.map((item, idx) => ({
+      id: item.id ?? idx,
+      isBot: !!item.isBot,
+      selected: !!item.selected
+    }));
 
     // Create reveal cards
     data.forEach((item, index) => {
-      const wasSelected = userSelections.includes(index);
       const card = gridContainer
         .append('div')
-        .attr('class', `reveal-card ${item.isBot ? 'reveal-bot' : 'reveal-human'} ${wasSelected ? 'user-selected' : ''}`)
+        .attr('class', `reveal-card ${item.isBot ? 'reveal-bot' : 'reveal-human'} ${item.selected ? 'user-selected' : ''}`)
         .style('opacity', 0)
         .html(`<div class="reveal-pfp">👤</div>`);
       
