@@ -1325,12 +1325,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Country data configuration
     const countryData = {
-      worldwide: { name: 'Worldwide', flag: '🌍', color: '#1D9BF0', file: '/dead_internet_theory/Datasets/search_traffic_worldwide_2020.csv' },
-      us:        { name: 'United States', flag: '🇺🇸', color: '#FF6B9D', file: '/dead_internet_theory/Datasets/search_country/us_search.csv' },
-      uk:        { name: 'United Kingdom', flag: '🇬🇧', color: '#FFD700', file: '/dead_internet_theory/Datasets/search_country/uk_search.csv' },
-      canada:    { name: 'Canada', flag: '🇨🇦', color: '#00BA7C', file: '/dead_internet_theory/Datasets/search_country/canada_search.csv' },
-      australia: { name: 'Australia', flag: '🇦🇺', color: '#9B6BFF', file: '/dead_internet_theory/Datasets/search_country/aus_search.csv' },
-      russia:    { name: 'Russia', flag: '🇷🇺', color: '#FF8C42', file: '/dead_internet_theory/Datasets/search_country/russia_search.csv' }
+      worldwide: { name: 'Worldwide', flag: '🌍', color: '#1D9BF0', file: '/Datasets/search_traffic_worldwide_2020.csv' },
+      us:        { name: 'United States', flag: '🇺🇸', color: '#FF6B9D', file: '/Datasets/search_country/us_search.csv' },
+      uk:        { name: 'United Kingdom', flag: '🇬🇧', color: '#FFD700', file: '/Datasets/search_country/uk_search.csv' },
+      canada:    { name: 'Canada', flag: '🇨🇦', color: '#00BA7C', file: '/Datasets/search_country/canada_search.csv' },
+      australia: { name: 'Australia', flag: '🇦🇺', color: '#9B6BFF', file: '/Datasets/search_country/aus_search.csv' },
+      russia:    { name: 'Russia', flag: '🇷🇺', color: '#FF8C42', file: '/Datasets/search_country/russia_search.csv' }
     };
 
   
