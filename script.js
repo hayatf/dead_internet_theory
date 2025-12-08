@@ -1335,7 +1335,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Resolve data paths so GitHub Pages can fetch real CSVs (not fall back to samples)
   const githubRawBase = 'https://raw.githubusercontent.com/hayatfarah/dead_internet_theory/main/';
-  const isGithubPages = location.hostname.endsWith('github.io');
+  // Make this global-safe so older code references won't break
+  const isGithubPages = typeof location !== 'undefined' && location.hostname.endsWith('github.io');
   const resolveDataPath = (relativePath) => relativePath.replace(/^\//, '');
 
   // Country data configuration
@@ -1393,9 +1394,15 @@ async function loadCountryData() {
 
         // Build a path relative to the site root (works on GitHub Pages and local server)
         const filePath = resolveDataPath(country.file);
-        console.log("Loading CSV from:", filePath);
+        console.log("[search trend] Loading CSV from:", filePath, "page:", window.location.href);
 
-        const text = await d3.text(filePath);
+        // Fetch with explicit status logging to surface 404/403 vs network errors
+        const resp = await fetch(filePath, { cache: 'no-store' });
+        console.log("[search trend] Response for", filePath, "=>", resp.status, resp.statusText);
+        if (!resp.ok) {
+          throw new Error(`HTTP ${resp.status} ${resp.statusText}`);
+        }
+        const text = await resp.text();
 
         // Parse like the working CSV loader
         const lines = text.split('\n').slice(2); // Skip first 2 lines
