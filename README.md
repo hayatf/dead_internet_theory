@@ -144,3 +144,12 @@ The concluding sections reinforce three central themes:
 - For CSV-based visualizations, some browsers require a local server:  
   ```bash
   python3 -m http.server
+
+### If charts show sample data instead of real CSVs
+
+- The search-trend chart falls back to sample data when a CSV fetch fails (404 or LFS pointer).
+- On GitHub Pages, make sure the CSVs are actually published:
+  1) Commit CSVs as normal git files (not LFS), or
+  2) Add a Pages build step that runs `git lfs pull`, or
+  3) Rely on the built-in `raw.githubusercontent.com` fallback already wired in `script.js`.
+- Quick check: open the CSV URL on your live site (e.g., `/search_traffic_worldwide_2020.csv` or `/Datasets/search_country/us_search.csv`). If you see a 404 or a small LFS pointer file, Pages will use sample data. Publish the real CSVs or update the path, then redeploy.
